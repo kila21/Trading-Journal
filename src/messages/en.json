@@ -17,22 +17,28 @@
     "subheading": "Videos, guides, and tools worth your time.",
     "items": [
       {
-        "title": "Getting started with trade journaling",
-        "description": "Why keeping a journal is the fastest way to improve as a trader.",
-        "url": "https://www.youtube.com/",
-        "thumbnail": "/resources/placeholder-1.svg"
+        "title": "Mentorship in Georgian (bee). Basics of trading",
+        "description": "Includes 22 video lessons covering fundamental topics in trading.",
+        "url": "https://www.youtube.com/playlist?list=PLqLRPyFbGacGQbHsjcHwfONcyiBrs02e7",
+        "thumbnail": "https://i.ytimg.com/vi/no_fTpv9R3M/hqdefault.jpg?sqp=-oaymwEXCNACELwBSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAJVi_67B7TR1IiBrG4T2x6w_8_yg"
       },
       {
-        "title": "Reading your own performance data",
-        "description": "How to turn your trade history into actionable insight.",
-        "url": "https://www.youtube.com/",
-        "thumbnail": "/resources/placeholder-2.svg"
+        "title": "ICT Mentorship 2022",
+        "description": "A full mentorship series covering ICT's core trading concepts from the ground up. Includes 41 video Lessons.",
+        "url": "https://www.youtube.com/playlist?list=PLVgHx4Z63paYiFGQ56PjTF1PGePL3r69s",
+        "thumbnail": "https://i.ytimg.com/vi/OYNpIeu9czw/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCI9K-SoU1aatZLNzIWmOZYi-K1FA"
       },
       {
-        "title": "Risk management basics",
-        "description": "Position sizing and risk rules every trader should track.",
-        "url": "https://www.youtube.com/",
-        "thumbnail": "/resources/placeholder-3.svg"
+        "title": "ICT Forex Course",
+        "description": "A complete forex-focused course from ICT. Includes 24 video lessons covering the basics of forex trading.",
+        "url": "https://www.youtube.com/playlist?list=PLVgHx4Z63paah1dHyad1OMJQJdm6iP2Yn",
+        "thumbnail": "https://i.ytimg.com/vi/7WM8qdkanIY/hqdefault.jpg?sqp=-oaymwExCNACELwBSFryq4qpAyMIARUAAIhCGAHwAQH4Af4JgALQBYoCDAgAEAEYZSBlKGUwDw==&rs=AOn4CLAvgLEzDpA016h8w6MnkbWv7dg_wQ"
+      },
+      {
+        "title": "2016 ICT Private Mentorship Core Content Month 01",
+        "description": "Month 1 of the ICT core concepts curriculum. The channel includes the full course (12 month), which is recommended.",
+        "url": "https://i.ytimg.com/vi/OYNpIeu9czw/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCI9K-SoU1aatZLNzIWmOZYi-K1FA",
+        "thumbnail": "https://i.ytimg.com/vi/OYNpIeu9czw/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCI9K-SoU1aatZLNzIWmOZYi-K1FA"
       }
     ]
   },

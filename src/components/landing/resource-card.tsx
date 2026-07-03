@@ -18,7 +18,13 @@ export function ResourceCard({
     <a href={url} target="_blank" rel="noopener noreferrer" className="block">
       <Card className="h-full transition-colors hover:border-primary">
         <div className="relative mb-4 aspect-video overflow-hidden rounded-lg bg-background">
-          <Image src={thumbnail} alt="" fill className="object-cover" />
+          <Image
+            src={thumbnail}
+            alt=""
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover"
+          />
         </div>
         <h3 className="mb-2 font-medium">{title}</h3>
         <p className="text-sm text-muted">{description}</p>

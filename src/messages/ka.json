@@ -1,14 +1,14 @@
 {
   "nav": {
-    "brand": "ვაჭრობის დღიური",
+    "brand": "ვაჭრობის ჟურნალი",
     "resources": "რესურსები",
     "faq": "კითხვები",
     "login": "შესვლა",
     "register": "რეგისტრაცია"
   },
   "hero": {
-    "title": "ვაჭრობის დღიური",
-    "subtitle": "აღრიცხეთ თქვენი გარიგებები, თვალი ადევნეთ შედეგებს და გახდით უფრო თანმიმდევრული — ყველაფერი ერთ სივრცეში.",
+    "title": "ვაჭრობის ჟურნალი",
+    "subtitle": "დააკვირდი შენ პოზიციებს, თვალი ადევნე შედეგებს და გახდი უფრო თანმიმდევრული — ყველაფერი ერთ სივრცეში.",
     "cta_login": "შესვლა",
     "cta_register": "დაწყება"
   },
@@ -17,22 +17,28 @@
     "subheading": "ვიდეოები, სახელმძღვანელოები და სასარგებლო ინსტრუმენტები.",
     "items": [
       {
-        "title": "ვაჭრობის დღიურის წარმოება — დაწყება",
-        "description": "რატომ არის დღიურის წარმოება ვაჭრობაში გაუმჯობესების ყველაზე სწრაფი გზა.",
-        "url": "https://www.youtube.com/",
-        "thumbnail": "/resources/placeholder-1.svg"
+        "title": "მენტორშიპი ქართულად (bee). ვაჭრობის საფუძვლები",
+        "description": "შეიცავს 22 ვიდეო გაკვეთილს, სადაც იხსნება ფუნდამენტური საკითხები ვაჭრობის შესახებ.",
+        "url": "https://www.youtube.com/playlist?list=PLqLRPyFbGacGQbHsjcHwfONcyiBrs02e7",
+        "thumbnail": "https://i.ytimg.com/vi/no_fTpv9R3M/hqdefault.jpg?sqp=-oaymwEXCNACELwBSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAJVi_67B7TR1IiBrG4T2x6w_8_yg"
       },
       {
-        "title": "საკუთარი შედეგების გაანალიზება",
-        "description": "როგორ გადავაქციოთ გარიგებების ისტორია სასარგებლო დასკვნებად.",
-        "url": "https://www.youtube.com/",
-        "thumbnail": "/resources/placeholder-2.svg"
+        "title": "ICT Mentorship 2022",
+        "description": "სრული მენტორშიპ სერია, რომელიც საფუძვლიდან მოიცავს ICT-ის ძირითად სავაჭრო კონცეფციებს. მოიცავს 41 ვიდეო გაკვეთილს.",
+        "url": "https://www.youtube.com/playlist?list=PLVgHx4Z63paYiFGQ56PjTF1PGePL3r69s",
+        "thumbnail": "https://i.ytimg.com/vi/OYNpIeu9czw/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCI9K-SoU1aatZLNzIWmOZYi-K1FA"
       },
       {
-        "title": "რისკის მართვის საფუძვლები",
-        "description": "პოზიციის ზომა და რისკის წესები, რომლებსაც ყველა ტრეიდერი უნდა აკონტროლებდეს.",
-        "url": "https://www.youtube.com/",
-        "thumbnail": "/resources/placeholder-3.svg"
+        "title": "ICT Forex Course",
+        "description": "სრული, ფორექსზე ორიენტირებული კურსი ICT-სგან.",
+        "url": "https://www.youtube.com/playlist?list=PLVgHx4Z63paah1dHyad1OMJQJdm6iP2Yn",
+        "thumbnail": "https://i.ytimg.com/vi/7WM8qdkanIY/hqdefault.jpg?sqp=-oaymwExCNACELwBSFryq4qpAyMIARUAAIhCGAHwAQH4Af4JgALQBYoCDAgAEAEYZSBlKGUwDw==&rs=AOn4CLAvgLEzDpA016h8w6MnkbWv7dg_wQ"
+      },
+      {
+        "title": "2016 ICT Private Mentorship Core Content Month 01",
+        "description": "ICT-ის ძირითადი კონცეფციების კურსის პირველი თვე. ამავე არხის კურსებში, ნახავ სრულ კურსს, რომელიც მოიცავს 12თვეს.",
+        "url": "https://www.youtube.com/playlist?list=PLVgHx4Z63paYzh3KwUFX0UHQUf31CAEXk",
+        "thumbnail": "https://i.ytimg.com/vi/OYNpIeu9czw/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCI9K-SoU1aatZLNzIWmOZYi-K1FA"
       }
     ]
   },
