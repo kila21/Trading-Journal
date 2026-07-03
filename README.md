@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trading Journal
 
-## Getting Started
+A web app for logging trades, tracking performance, and building consistency as a
+trader.
 
-First, run the development server:
+**Status:** early scaffold — currently just the public landing page (hero, resources,
+FAQ) with English/Georgian support. The actual journal (trade log, analytics,
+dashboard) hasn't been built yet.
+
+## Stack
+
+- [Next.js](https://nextjs.org) (App Router) + TypeScript
+- [Tailwind CSS v4](https://tailwindcss.com) for styling
+- [next-intl](https://next-intl.dev) for English / Georgian localization
+- [Prisma](https://www.prisma.io) + SQLite for local data storage
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) — it redirects to `/en` (or `/ka`
+based on your browser language).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The `postinstall` script runs `prisma generate` automatically, so the database client
+is ready right after `npm install`. If you ever change `prisma/schema.prisma`, run:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run db:migrate
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command              | Description                          |
+| --------------------- | ------------------------------------- |
+| `npm run dev`         | Start the dev server                  |
+| `npm run build`        | Production build                      |
+| `npm run start`        | Run the production build              |
+| `npm run lint`         | Check code style                      |
+| `npm run lint:fix`      | Fix code style issues                  |
+| `npm run typecheck`     | Check TypeScript types                 |
+| `npm run db:migrate`    | Apply a Prisma migration               |
+| `npm run db:studio`     | Browse the local database in a GUI      |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [x] Landing page, design system, i18n
+- [ ] Authentication (Login/Register are placeholder pages today)
+- [ ] Trade log — add/edit/view trades
+- [ ] Dashboard — performance stats, equity curve
+- [ ] Hosted deployment (Netlify + hosted Postgres)
