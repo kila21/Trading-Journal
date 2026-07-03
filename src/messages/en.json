@@ -1,0 +1,68 @@
+{
+  "nav": {
+    "brand": "Trading Journal",
+    "resources": "Resources",
+    "faq": "FAQ",
+    "login": "Log in",
+    "register": "Sign up"
+  },
+  "hero": {
+    "title": "Trading Journal",
+    "subtitle": "Log your trades, track your performance, and build consistency — all in one place.",
+    "cta_login": "Log in",
+    "cta_register": "Get started"
+  },
+  "resources": {
+    "heading": "Resources",
+    "subheading": "Videos, guides, and tools worth your time.",
+    "items": [
+      {
+        "title": "Getting started with trade journaling",
+        "description": "Why keeping a journal is the fastest way to improve as a trader.",
+        "url": "https://www.youtube.com/",
+        "thumbnail": "/resources/placeholder-1.svg"
+      },
+      {
+        "title": "Reading your own performance data",
+        "description": "How to turn your trade history into actionable insight.",
+        "url": "https://www.youtube.com/",
+        "thumbnail": "/resources/placeholder-2.svg"
+      },
+      {
+        "title": "Risk management basics",
+        "description": "Position sizing and risk rules every trader should track.",
+        "url": "https://www.youtube.com/",
+        "thumbnail": "/resources/placeholder-3.svg"
+      }
+    ]
+  },
+  "faq": {
+    "heading": "Frequently asked questions",
+    "items": [
+      {
+        "question": "Is Trading Journal free to use?",
+        "answer": "Yes, the core journal features are free while the project is in development."
+      },
+      {
+        "question": "Can I use this on mobile?",
+        "answer": "The app is being built responsively, so it will work on mobile browsers."
+      },
+      {
+        "question": "Where is my data stored?",
+        "answer": "During local development, your data is stored locally. A hosted version is planned for the future."
+      }
+    ]
+  },
+  "footer": {
+    "owner": "Built by Luka",
+    "contact": "kilasonialuka@gmail.com",
+    "copyright": "© 2026 Trading Journal. All rights reserved."
+  },
+  "authStub": {
+    "loginTitle": "Log in",
+    "loginDescription": "Account login is coming soon. Check back once the dashboard is ready.",
+    "registerTitle": "Sign up",
+    "registerDescription": "Registration is coming soon. Check back once the dashboard is ready.",
+    "backHome": "Back to home"
+  }
+}
