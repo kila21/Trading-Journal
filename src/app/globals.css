@@ -8,6 +8,8 @@
   --primary-foreground: #ffffff;
   --muted: rgba(245, 245, 245, 0.7);
   --border: rgba(255, 255, 255, 0.12);
+  --success: #22c55e;
+  --danger: #ef4444;
   color-scheme: dark;
 }
 
@@ -19,6 +21,8 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
 
   --font-sans: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif;
   --font-georgian: var(--font-noto-georgian), sans-serif;
