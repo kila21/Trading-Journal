@@ -10,6 +10,7 @@
   --border: rgba(255, 255, 255, 0.12);
   --success: #22c55e;
   --danger: #ef4444;
+  --warning: #f59e0b;
   color-scheme: dark;
 }
 
@@ -23,6 +24,7 @@
   --color-border: var(--border);
   --color-success: var(--success);
   --color-danger: var(--danger);
+  --color-warning: var(--warning);
 
   --font-sans: var(--font-space-grotesk), var(--font-noto-georgian), sans-serif;
   --font-georgian: var(--font-noto-georgian), sans-serif;
