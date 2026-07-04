@@ -1,0 +1,23 @@
+"use client";
+
+import { Dialog } from "@/components/ui/dialog";
+import { TradeForm } from "./trade-form";
+import type { TradeDTO } from "./use-month-trades";
+
+export function TradeFormModal({
+  date,
+  trade,
+  onClose,
+  onSaved,
+}: {
+  date: Date;
+  trade?: TradeDTO;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  return (
+    <Dialog onClose={onClose}>
+      <TradeForm date={date} trade={trade} onClose={onClose} onSaved={onSaved} />
+    </Dialog>
+  );
+}
