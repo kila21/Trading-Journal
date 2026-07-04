@@ -85,6 +85,15 @@
     "acknowledgment": "By submitting a form, you confirm that you have read and agree to Trading Journal's Privacy Policy and Terms & Conditions.",
     "backHome": "Back to home"
   },
+  "aboutMe": {
+    "title": "About Me",
+    "paragraphs": [
+      "Welcome! This platform is a personal Trading Journal, built with two main goals in mind: achieving professional growth in development and mastering the art of trading.",
+      "As a developer, I built this free project entirely on my own initiative to sharpen my frontend skills and gain hands-on experience in application development.",
+      "At the same time, this website serves as my personal trading companion. It allows me to log my opened positions, track my ongoing records, and deeply analyze my performance. By reviewing the entries, I can easily identify my good and bad trading days, analyze my mistakes, and consistently refine my trading strategy."
+    ],
+    "backHome": "Back to home"
+  },
   "riskDisclaimer": {
     "title": "Risk Disclaimer",
     "paragraphs": [
@@ -109,7 +118,7 @@
       "terms": "Terms & Conditions",
       "privacy": "Privacy Policy",
       "riskDisclaimer": "Risk Disclaimer",
-      "about": "About / Contact"
+      "about": "About Me"
     }
   },
   "authStub": {

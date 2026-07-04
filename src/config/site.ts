@@ -14,5 +14,5 @@ export const footerLinks = [
   { key: "terms", href: "#" },
   { key: "privacy", href: "/privacy" },
   { key: "riskDisclaimer", href: "/risk-disclaimer" },
-  { key: "about", href: "#about" },
+  { key: "about", href: "/about" },
 ] as const;
