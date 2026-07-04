@@ -160,9 +160,32 @@
   },
   "authStub": {
     "loginTitle": "Log in",
-    "loginDescription": "Account login is coming soon. Check back once the dashboard is ready.",
+    "loginDescription": "Log in to your account.",
     "registerTitle": "Sign up",
-    "registerDescription": "Registration is coming soon. Check back once the dashboard is ready.",
-    "backHome": "Back to home"
+    "registerDescription": "Create an account to get started.",
+    "backHome": "Back to home",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "confirmPasswordLabel": "Confirm password",
+    "loginSubmit": "Log in",
+    "registerSubmit": "Create account",
+    "loginFooterPrompt": "Don't have an account?",
+    "loginFooterLink": "Sign up",
+    "registerFooterPrompt": "Already have an account?",
+    "registerFooterLink": "Log in",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "errorPasswordMismatch": "Passwords do not match.",
+    "errorInvalidCredentials": "Invalid email or password.",
+    "errorEmailTaken": "This email is already registered. Try logging in instead.",
+    "errorPasswordTooShort": "Password must be at least 8 characters.",
+    "errorPasswordTooLong": "Password must be no more than 128 characters.",
+    "errorInvalidEmail": "Please enter a valid email address."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "metaDescription": "Your Trading Journal account dashboard.",
+    "loggedInAs": "Logged in as {email}",
+    "logout": "Log out"
   }
 }

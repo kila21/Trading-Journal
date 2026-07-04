@@ -160,9 +160,32 @@
   },
   "authStub": {
     "loginTitle": "შესვლა",
-    "loginDescription": "ანგარიშზე შესვლა მალე იქნება ხელმისაწვდომი. დაბრუნდით მას შემდეგ, რაც დეშბორდი მზად იქნება.",
+    "loginDescription": "შედით თქვენს ანგარიშში.",
     "registerTitle": "რეგისტრაცია",
-    "registerDescription": "რეგისტრაცია მალე იქნება ხელმისაწვდომი. დაბრუნდით მას შემდეგ, რაც დეშბორდი მზად იქნება.",
-    "backHome": "მთავარზე დაბრუნება"
+    "registerDescription": "შექმენით ანგარიში დასაწყებად.",
+    "backHome": "მთავარზე დაბრუნება",
+    "nameLabel": "სახელი",
+    "emailLabel": "ელფოსტა",
+    "passwordLabel": "პაროლი",
+    "confirmPasswordLabel": "გაიმეორეთ პაროლი",
+    "loginSubmit": "შესვლა",
+    "registerSubmit": "ანგარიშის შექმნა",
+    "loginFooterPrompt": "არ გაქვთ ანგარიში?",
+    "loginFooterLink": "რეგისტრაცია",
+    "registerFooterPrompt": "უკვე გაქვთ ანგარიში?",
+    "registerFooterLink": "შესვლა",
+    "errorGeneric": "დაფიქსირდა შეცდომა. გთხოვთ სცადოთ თავიდან.",
+    "errorPasswordMismatch": "პაროლები არ ემთხვევა.",
+    "errorInvalidCredentials": "არასწორი ელფოსტა ან პაროლი.",
+    "errorEmailTaken": "ეს ელფოსტა უკვე რეგისტრირებულია. სცადეთ შესვლა.",
+    "errorPasswordTooShort": "პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს.",
+    "errorPasswordTooLong": "პაროლი არ უნდა აღემატებოდეს 128 სიმბოლოს.",
+    "errorInvalidEmail": "გთხოვთ შეიყვანოთ სწორი ელფოსტის მისამართი."
+  },
+  "dashboard": {
+    "title": "დეშბორდი",
+    "metaDescription": "თქვენი Trading Journal ანგარიშის დეშბორდი.",
+    "loggedInAs": "შესული ხართ როგორც {email}",
+    "logout": "გასვლა"
   }
 }
