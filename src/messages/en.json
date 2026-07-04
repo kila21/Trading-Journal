@@ -109,6 +109,29 @@
     ],
     "backHome": "Back to home"
   },
+  "terms": {
+    "title": "Terms & Conditions",
+    "intro": "This platform is a personal trading journal and is intended solely for informational and educational purposes. By using this website, you agree to the following terms:",
+    "items": [
+      {
+        "heading": "Personal Use",
+        "body": "This is a free tool designed for individual trading analysis and development practice."
+      },
+      {
+        "heading": "Disclaimer of Liability",
+        "body": "The information logged or displayed on this site does not constitute financial advice. The author of this platform is not responsible for any financial decisions, trading outcomes, profits, or losses incurred by the user."
+      },
+      {
+        "heading": "Data Usage",
+        "body": "Your logged positions and trading history are used strictly for your own personal tracking and analysis."
+      },
+      {
+        "heading": "Modifications",
+        "body": "As this is an ongoing project, the features and functionality of the site may be updated or modified at any time."
+      }
+    ],
+    "backHome": "Back to home"
+  },
   "footer": {
     "owner": "Built by Luka",
     "contact": "kilasonialuka@gmail.com",
