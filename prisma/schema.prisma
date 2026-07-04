@@ -26,6 +26,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  trades        Trade[]
 
   @@unique([email])
   @@map("user")
@@ -77,4 +78,27 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+// direction is a plain string ("long" | "short"), validated in
+// src/lib/validate-trade.ts — SQLite's Prisma connector doesn't support enums.
+model Trade {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol     String
+  direction  String
+  entryPrice Float
+  exitPrice  Float
+  takeProfit Float?
+  stopLoss   Float?
+  size       Float
+  pnl        Float
+  tradeDate  DateTime
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, tradeDate])
+  @@map("trade")
 }
