@@ -17,12 +17,6 @@
     "subheading": "Videos, guides, and tools worth your time.",
     "items": [
       {
-        "title": "Mentorship in Georgian (bee). Basics of trading",
-        "description": "Includes 22 video lessons covering fundamental topics in trading.",
-        "url": "https://www.youtube.com/playlist?list=PLqLRPyFbGacGQbHsjcHwfONcyiBrs02e7",
-        "thumbnail": "https://i.ytimg.com/vi/no_fTpv9R3M/hqdefault.jpg?sqp=-oaymwEXCNACELwBSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAJVi_67B7TR1IiBrG4T2x6w_8_yg"
-      },
-      {
         "title": "ICT Mentorship 2022",
         "description": "A full mentorship series covering ICT's core trading concepts from the ground up. Includes 41 video Lessons.",
         "url": "https://www.youtube.com/playlist?list=PLVgHx4Z63paYiFGQ56PjTF1PGePL3r69s",
@@ -46,16 +40,28 @@
     "heading": "Frequently asked questions",
     "items": [
       {
-        "question": "Is Trading Journal free to use?",
-        "answer": "Yes, the core journal features are free while the project is in development."
+        "question": "What is a Trading Journal and why do I need one?",
+        "answer": "A trading journal is a tool used to log and track the details of your trades. It helps you keep a historical record of your performance, identify patterns, learn from past mistakes, and build consistency and discipline in your trading."
       },
       {
-        "question": "Can I use this on mobile?",
-        "answer": "The app is being built responsively, so it will work on mobile browsers."
+        "question": "Is this website free to use?",
+        "answer": "Yes, the platform is completely free. It is a personal project built entirely on my own initiative to practice application development and assist in the process of learning how to trade."
       },
       {
-        "question": "Where is my data stored?",
-        "answer": "During local development, your data is stored locally. A hosted version is planned for the future."
+        "question": "Is my trading data stored securely?",
+        "answer": "Yes, your privacy is protected. All logged positions and trading history are kept secure and are strictly used for your own personal tracking and analysis."
+      },
+      {
+        "question": "Does this website provide financial advice or trading signals?",
+        "answer": "No. This platform does not provide financial advice, market recommendations, or trading signals. It serves solely as an analytical tool to log and evaluate your own independent trades."
+      },
+      {
+        "question": "What type of trading asset and strategy is this journal focused on?",
+        "answer": "The primary focus of this journal is futures and forex trading, with a core emphasis on the ICT (Inner Circle Trader) concepts, allowing you to log and analyze your setups based on this specific methodology."
+      },
+      {
+        "question": "Can I contact the author for feedback?",
+        "answer": "Absolutely! Since this is an ongoing project, any feedback, feature suggestions, or bug reports are highly valuable and welcome. You can reach out through the contact section."
       }
     ]
   },
