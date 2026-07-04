@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { getMockDailyStats } from "@/components/dashboard/mock-data";
 import { formatPnl } from "@/components/dashboard/format-pnl";
+import type { DailyStats } from "@/components/dashboard/trades/trade-stats";
 import { CalendarHeader } from "./calendar-header";
 import { DayCell } from "./day-cell";
 import { buildCalendarWeeks, getWeekdayLabels } from "./utils";
@@ -11,18 +11,21 @@ import { buildCalendarWeeks, getWeekdayLabels } from "./utils";
 export function Calendar({
   year,
   month,
+  dailyStats,
   onPrevMonth,
   onNextMonth,
   onToday,
+  onDayClick,
 }: {
   year: number;
   month: number;
+  dailyStats: Map<number, DailyStats>;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
+  onDayClick: (date: Date) => void;
 }) {
   const weeks = useMemo(() => buildCalendarWeeks(year, month), [year, month]);
-  const dailyStats = useMemo(() => getMockDailyStats(year, month), [year, month]);
   const weekdayLabels = useMemo(() => getWeekdayLabels(), []);
 
   // Shade intensity is relative to the biggest win/loss in the visible month,
@@ -68,6 +71,7 @@ export function Calendar({
                 intensity={intensity}
                 trades={stats?.trades}
                 winRate={winRate}
+                onClick={day.isCurrentMonth ? () => onDayClick(day.date) : undefined}
               />
             );
           }),

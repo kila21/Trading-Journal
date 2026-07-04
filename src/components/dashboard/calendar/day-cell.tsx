@@ -12,6 +12,7 @@ export function DayCell({
   intensity = 0,
   trades,
   winRate,
+  onClick,
 }: {
   day: CalendarDay;
   pnlLabel?: string;
@@ -19,6 +20,7 @@ export function DayCell({
   intensity?: number;
   trades?: number;
   winRate?: number;
+  onClick?: () => void;
 }) {
   const t = useTranslations("dashboard");
   const hasPnl = typeof pnlLabel === "string";
@@ -36,8 +38,22 @@ export function DayCell({
 
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={cn(
         "flex min-h-24 flex-col justify-between rounded-lg border p-2",
+        onClick && "cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary",
         day.isCurrentMonth ? "border-border bg-surface" : "border-transparent bg-background/40 opacity-40",
       )}
       style={style}

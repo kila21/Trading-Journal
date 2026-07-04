@@ -12,10 +12,21 @@ const monthYearFormatter = new Intl.DateTimeFormat("en-US", {
 
 const weekdayFormatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
 
+const fullDateFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
 export function formatMonthYear(date: Date): string {
   return monthYearFormatter.format(date);
 }
 
 export function formatWeekday(date: Date): string {
   return weekdayFormatter.format(date);
+}
+
+export function formatFullDate(date: Date): string {
+  return fullDateFormatter.format(date);
 }
