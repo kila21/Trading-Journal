@@ -1,7 +1,14 @@
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { createMetadata } from "@/lib/metadata";
+
+export const generateMetadata = createMetadata(async (locale) => {
+  const t = await getTranslations({ locale, namespace: "authStub" });
+  return { title: t("registerTitle"), description: t("registerDescription") };
+});
 
 export default function RegisterPage() {
   const t = useTranslations("authStub");

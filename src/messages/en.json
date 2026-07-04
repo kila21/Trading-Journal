@@ -1,4 +1,8 @@
 {
+  "metadata": {
+    "title": "Trading Journal",
+    "description": "Log your trades, track your performance, and build consistency — all in one place."
+  },
   "nav": {
     "brand": "Trading Journal",
     "resources": "Resources",
@@ -77,6 +81,7 @@
   },
   "privacy": {
     "title": "Privacy Policy",
+    "metaDescription": "How Trading Journal collects, uses, and protects the personal data you provide.",
     "intro": "Trading Journal collects only the minimal personal data you voluntarily provide through a contact form, including:",
     "fields": ["Full name", "Phone number"],
     "intro2": "This data is used only to get in touch with you, share information about Trading Journal's services, and continue the conversation.",
@@ -93,6 +98,7 @@
   },
   "aboutMe": {
     "title": "About Me",
+    "metaDescription": "Why I built Trading Journal and how I use it to track and improve my own trading.",
     "paragraphs": [
       "Welcome! This platform is a personal Trading Journal, built with two main goals in mind: achieving professional growth in development and mastering the art of trading.",
       "As a developer, I built this free project entirely on my own initiative to sharpen my frontend skills and gain hands-on experience in application development.",
@@ -102,6 +108,7 @@
   },
   "riskDisclaimer": {
     "title": "Risk Disclaimer",
+    "metaDescription": "Trading involves substantial risk. Read the risk disclaimer before using Trading Journal.",
     "paragraphs": [
       "All information, material, and content presented on Trading Journal is intended for educational purposes only.",
       "Trading involves substantial financial risk and may result in the partial or complete loss of capital.",
@@ -117,6 +124,7 @@
   },
   "terms": {
     "title": "Terms & Conditions",
+    "metaDescription": "The terms and conditions for using Trading Journal.",
     "intro": "This platform is a personal trading journal and is intended solely for informational and educational purposes. By using this website, you agree to the following terms:",
     "items": [
       {

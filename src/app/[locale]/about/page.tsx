@@ -1,7 +1,14 @@
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { createMetadata } from "@/lib/metadata";
+
+export const generateMetadata = createMetadata(async (locale) => {
+  const t = await getTranslations({ locale, namespace: "aboutMe" });
+  return { title: t("title"), description: t("metaDescription") };
+});
 
 export default function AboutMePage() {
   const t = useTranslations("aboutMe");

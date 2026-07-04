@@ -1,12 +1,19 @@
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { createMetadata } from "@/lib/metadata";
 
 interface TermsItem {
   heading: string;
   body: string;
 }
+
+export const generateMetadata = createMetadata(async (locale) => {
+  const t = await getTranslations({ locale, namespace: "terms" });
+  return { title: t("title"), description: t("metaDescription") };
+});
 
 export default function TermsPage() {
   const t = useTranslations("terms");

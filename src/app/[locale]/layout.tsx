@@ -1,15 +1,44 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { notoGeorgian, spaceGrotesk } from "@/lib/fonts";
+import { ogLocales } from "@/lib/metadata";
 import "../globals.css";
 
-export const metadata: Metadata = {
-  title: "Trading Journal",
-  description: "Log your trades, track your performance, build consistency.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "metadata" });
+  const title = t("title");
+  const description = t("description");
+
+  return {
+    metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
+    title: {
+      default: title,
+      template: `%s | ${title}`,
+    },
+    description,
+    openGraph: {
+      title,
+      description,
+      siteName: title,
+      type: "website",
+      locale: ogLocales[locale] ?? "en_US",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
