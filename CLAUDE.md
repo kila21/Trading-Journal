@@ -54,6 +54,17 @@ src/
 │   ├── ui/            # generic, reusable primitives (Button, Card, Accordion) —
 │   │                    no copy, no business logic. Reused by future dashboard.
 │   └── landing/         # this-phase page composition, copy via useTranslations
+│       ├── navbar.tsx, hero.tsx, footer.tsx   # single-file sections stay flat
+│       ├── resources/    # multi-file sections get their own folder
+│       │   ├── resources-section.tsx
+│       │   └── resource-card.tsx
+│       ├── faq/
+│       │   └── faq-section.tsx
+│       └── about/
+│           ├── about-card.tsx
+│           └── social-icons.tsx   # section-specific icons live with their
+│                                     section, not in ui/ — they're brand/copy
+│                                     content, not generic primitives
 ├── lib/
 │   ├── fonts.ts        # next/font/google instances
 │   ├── prisma.ts        # PrismaClient singleton
@@ -64,7 +75,10 @@ src/
 
 `ui/` vs `landing/`: `ui/` primitives must stay copy-free and business-logic-free so
 the real dashboard can reuse them later. Anything specific to this landing page
-(copy, links, layout) belongs in `landing/`.
+(copy, links, layout, section-specific icons) belongs in `landing/`. Within
+`landing/`, a section gets its own subfolder once it has more than one file
+(e.g. a section component plus its card or icons); single-file sections stay
+flat in `landing/` — don't create a folder just to hold one file.
 
 ## i18n
 

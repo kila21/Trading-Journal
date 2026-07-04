@@ -37,7 +37,7 @@
       {
         "title": "2016 ICT Private Mentorship Core Content Month 01",
         "description": "Month 1 of the ICT core concepts curriculum. The channel includes the full course (12 month), which is recommended.",
-        "url": "https://i.ytimg.com/vi/OYNpIeu9czw/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCI9K-SoU1aatZLNzIWmOZYi-K1FA",
+        "url": "https://www.youtube.com/playlist?list=PLVgHx4Z63paYzh3KwUFX0UHQUf31CAEXk",
         "thumbnail": "https://i.ytimg.com/vi/OYNpIeu9czw/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCI9K-SoU1aatZLNzIWmOZYi-K1FA"
       }
     ]
@@ -59,10 +59,27 @@
       }
     ]
   },
+  "about": {
+    "heading": "Who's building this",
+    "name": "Luka",
+    "social": {
+      "github": "GitHub",
+      "instagram": "Instagram",
+      "linkedin": "LinkedIn",
+      "facebook": "Facebook"
+    }
+  },
   "footer": {
     "owner": "Built by Luka",
     "contact": "kilasonialuka@gmail.com",
-    "copyright": "© 2026 Trading Journal. All rights reserved."
+    "copyright": "© 2026 Trading Journal. All rights reserved.",
+    "disclaimer": "Futures and forex trading involve significant risk and are not suitable for every investor. An investor could potentially lose all or more than their initial investment. Risk capital is money that can be lost without jeopardizing one's financial security or lifestyle. Only risk capital should be used for trading, and only those with sufficient risk capital should consider trading. Past performance is not necessarily indicative of future results.",
+    "links": {
+      "terms": "Terms & Conditions",
+      "privacy": "Privacy Policy",
+      "riskDisclaimer": "Risk Disclaimer",
+      "about": "About / Contact"
+    }
   },
   "authStub": {
     "loginTitle": "Log in",

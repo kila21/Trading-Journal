@@ -20,7 +20,7 @@ export function ResourceCard({
         <div className="relative mb-4 aspect-video overflow-hidden rounded-lg bg-background">
           <Image
             src={thumbnail}
-            alt=""
+            alt={title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover"
