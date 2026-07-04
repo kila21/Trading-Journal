@@ -135,6 +135,104 @@ Here's every Prisma-related file/folder and what it does:
 real trading journal" will add — a schema with real models, a migration, and
 actual pages/API routes that read and write data through `src/lib/prisma.ts`.
 
+## Phase 2 progress (as of 2026-07-04)
+
+Phase 1 (landing page, i18n, design system) is done. Steps 1–5 below (auth strategy
+through route protection) are **done** — `/login` and `/register` are real now, backed
+by [Better Auth](https://better-auth.com), with a placeholder `/dashboard` to redirect
+to and prove the session/route-protection flow end-to-end.
+
+1. ~~Decide the auth strategy~~ **Done — Better Auth**, not Auth.js/NextAuth. The
+   landscape shifted since this plan was first drafted: as of Sept 2025 the Better Auth
+   team took over Auth.js maintenance, and Auth.js v5 is now in security-patch-only
+   mode with its own maintainers pointing new projects at Better Auth. Roll-your-own was
+   also considered and rejected — no benefit over a self-hosted library that gives the
+   same data ownership without hand-building password hashing/session/CSRF correctness.
+
+2. ~~Form validation on Login/Register~~ **Done, without `zod`.** Better Auth validates
+   email/password server-side; the one extra check this app needed (password-confirm
+   match on register) is a one-line comparison in `register-form.tsx`. `zod` is still a
+   natural addition once real dashboard forms (trade entry) exist.
+
+3. ~~`User` model + first Prisma migration~~ **Done.** Better Auth generates its own
+   `User`/`Session`/`Account`/`Verification` models (via
+   `npx @better-auth/cli generate --config src/lib/auth.ts`); first-ever migration ran
+   via `npm run db:migrate`, creating `dev.db` and `prisma/migrations/`.
+   **Gotcha hit along the way**: Prisma 7's client generator ships as an ES module and
+   silently produces `undefined` for every model delegate (`prisma.user`, etc.) unless
+   the root `package.json` has `"type": "module"` — no error, it just fails at the call
+   site. That's now set; see `CLAUDE.md`'s gotchas list.
+
+4. ~~Wire real register/login~~ **Done**, via client-side calls to Better Auth's React
+   client (`signIn.email`/`signUp.email` in `src/lib/auth-client.ts`) from client
+   components in `src/components/auth/`, not Server Actions — Better Auth's client SDK
+   already handles the cookie/session dance against `/api/auth/[...all]`.
+
+5. ~~Route protection~~ **Done, two-layered.** `src/proxy.ts` does an optimistic
+   cookie-presence check (`getSessionCookie`) to bounce logged-out visitors from
+   `/dashboard`; `src/app/[locale]/dashboard/page.tsx` does the authoritative DB-backed
+   `auth.api.getSession()` check. `/dashboard` itself is just a placeholder ("logged in
+   as {email}" + logout) — not the real dashboard.
+
+6. ~~`Trade` schema~~ **Done** — see Phase 3 below. `Account` (brokerage/portfolio
+   account, distinct from Better Auth's own `Account` model) is still deferred until
+   multi-account support is actually needed.
+
+7. **Testing setup.** Still not configured (no Jest/Vitest/Playwright). Worth adding
+   before more auth logic lands (password reset, email verification, OAuth) — auth bugs
+   caught after the fact are much more expensive than a bug in landing-page copy.
+
+8. **Hosted deployment swap** (SQLite → hosted Postgres via Neon/Supabase, per
+   `CLAUDE.md`) — not urgent until more of the above is real and working locally.
+   Note Better Auth's `prismaAdapter(prisma, { provider: "sqlite" })` call in
+   `src/lib/auth.ts` will need its `provider` updated to `"postgresql"` alongside the
+   `datasource`/adapter swap.
+
+9. **Not done yet, worth deciding next**: password reset flow, email verification
+   (currently off — registering logs you straight in), and whether/when to add OAuth
+   providers (Better Auth makes this a small `socialProviders` config addition).
+
+## Phase 3 progress (as of 2026-07-05)
+
+The real dashboard has started: a collapsible sidebar, a Net P&L summary, a month
+calendar color-coded by realized P&L, and full trade create/edit/review via modals —
+all backed by a real `Trade` model now, not mock data.
+
+- **`Trade` model** (`prisma/schema.prisma`): `symbol`, `direction` (plain `String`,
+  `"long" | "short"` — SQLite's Prisma connector doesn't support enums), `entryPrice`,
+  `exitPrice`, `takeProfit`/`stopLoss` (optional), `size`, `pnl`, `tradeDate`, `notes`.
+  `pnl` is **manually entered as a magnitude, sign auto-calculated**
+  (`trade-form.tsx`'s `computePnlSign`) from direction + entry/exit price — not derived
+  from `entryPrice`/`exitPrice`/`size` directly, since real P&L depends on contract
+  point value / lot size that isn't modeled (this app spans futures, forex, and
+  crypto). Take profit/stop loss get a non-blocking warning (not enforced) if they're
+  on the wrong side of entry for the direction, since a trailing stop moved into
+  profit can legitimately end up past entry.
+- **API**: `src/app/api/trades/route.ts` (GET by year/month, POST) and
+  `src/app/api/trades/[id]/route.ts` (PATCH, DELETE), all scoped to the session
+  user via `auth.api.getSession`, mirroring the Better Auth route's pattern. Hand-
+  rolled validation in `src/lib/validate-trade.ts` — no `zod` yet (see item 2 above);
+  still the natural place to add it if the form grows more complex.
+  **Gotcha hit along the way**: adding a Prisma model to an already-running dev
+  server doesn't work without a restart — `src/lib/prisma.ts` caches the client on
+  `globalThis` for HMR, so an already-running process keeps the pre-migration client
+  shape in memory. See `CLAUDE.md`'s gotchas list.
+- **Modals**: click an empty calendar day → create form opens directly; click a day
+  with trades → a read-only review modal lists them with "Add trade"/"Edit" actions.
+  `src/components/ui/dialog.tsx` wraps the native `<dialog>` element (no new
+  dependency) — mount/unmount is the only source of truth for open/closed (an
+  earlier version tried to sync an `open` prop against the dialog's own native
+  state and the modal would stop reopening after a close; letting React's own
+  mount lifecycle own it sidesteps that entirely).
+- **`src/components/ui/info-tooltip.tsx`**: small "!" icon for field hints (used by
+  Size and P&L). Positioned via measured `getBoundingClientRect()` +
+  `position: fixed`, not CSS centering — a plain absolutely-positioned tooltip
+  escaped/clipped unpredictably inside the scrollable dialog depending on where the
+  icon sat; `fixed` positioning escapes that overflow/clipping model entirely.
+- Not done yet: image/screenshot upload on trades (deferred — needs a storage
+  decision, local disk vs. cloud, that hasn't been made), and the brokerage
+  `Account` model from item 6 above.
+
 ## If you only open 7 files, open these
 
 1. `src/app/[locale]/layout.tsx` — see how fonts, translations, and `<html lang>` connect

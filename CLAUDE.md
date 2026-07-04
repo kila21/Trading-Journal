@@ -113,6 +113,14 @@ flat in `landing/` — don't create a folder just to hold one file.
   thrown, it just fails at the call site. This is easy to miss because everything looks
   fine until you actually query a model. `"type": "module"` is already set; don't remove
   it.
+- **Adding a Prisma model to an already-running dev server won't work without a
+  restart.** `src/lib/prisma.ts` caches the `PrismaClient` singleton on `globalThis`
+  on purpose, to survive Turbopack's Hot Module Reload in dev. That's the right move
+  for HMR performance, but it also means a dev server started *before* a schema
+  change + `db:migrate`/`db:generate` keeps the old client shape in memory — new
+  model delegates (e.g. `prisma.trade`) throw `undefined is not a function` even
+  though the generated code on disk is correct. Restart `npm run dev` after any
+  schema change, not just after adding `"type": "module"`.
 
 ## Data layer
 
