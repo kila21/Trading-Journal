@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Card } from "@/components/ui/card";
 import { footerLinks } from "@/config/site";
 
@@ -13,9 +14,15 @@ export function Footer() {
             {footerLinks.map((link, i) => (
               <span key={link.key} className="flex items-center gap-3">
                 {i > 0 && <span aria-hidden className="text-muted">•</span>}
-                <a href={link.href} className="hover:text-primary">
-                  {t(`links.${link.key}`)}
-                </a>
+                {link.href.startsWith("#") ? (
+                  <a href={link.href} className="hover:text-primary">
+                    {t(`links.${link.key}`)}
+                  </a>
+                ) : (
+                  <Link href={link.href} className="hover:text-primary">
+                    {t(`links.${link.key}`)}
+                  </Link>
+                )}
               </span>
             ))}
           </nav>

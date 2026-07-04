@@ -69,6 +69,22 @@
       "facebook": "Facebook"
     }
   },
+  "privacy": {
+    "title": "Privacy Policy",
+    "intro": "Trading Journal collects only the minimal personal data you voluntarily provide through a contact form, including:",
+    "fields": ["Full name", "Phone number"],
+    "intro2": "This data is used only to get in touch with you, share information about Trading Journal's services, and continue the conversation.",
+    "commitmentsHeading": "Trading Journal:",
+    "commitments": [
+      "Does not collect banking or payment card details",
+      "Does not process payments through the website",
+      "Does not share personal data with third parties",
+      "Stores your data securely and does not use it for other purposes without your prior consent"
+    ],
+    "rights": "You may request deletion or correction of your data at any time by writing to kilasonialuka@gmail.com.",
+    "acknowledgment": "By submitting a form, you confirm that you have read and agree to Trading Journal's Privacy Policy and Terms & Conditions.",
+    "backHome": "Back to home"
+  },
   "footer": {
     "owner": "Built by Luka",
     "contact": "kilasonialuka@gmail.com",
