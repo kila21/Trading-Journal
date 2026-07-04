@@ -185,7 +185,16 @@
   "dashboard": {
     "title": "Dashboard",
     "metaDescription": "Your Trading Journal account dashboard.",
-    "loggedInAs": "Logged in as {email}",
-    "logout": "Log out"
+    "logout": "Log out",
+    "netPnl": "Net P&L this month",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "today": "Today",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "trades": "{count, plural, one {# trade} other {# trades}}",
+    "nav": {
+      "dashboard": "Dashboard"
+    }
   }
 }

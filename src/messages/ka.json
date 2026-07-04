@@ -185,7 +185,16 @@
   "dashboard": {
     "title": "დეშბორდი",
     "metaDescription": "თქვენი Trading Journal ანგარიშის დეშბორდი.",
-    "loggedInAs": "შესული ხართ როგორც {email}",
-    "logout": "გასვლა"
+    "logout": "გასვლა",
+    "netPnl": "წმინდა P&L ამ თვეში",
+    "collapseSidebar": "გვერდითი მენიუს დამალვა",
+    "expandSidebar": "გვერდითი მენიუს გამოჩენა",
+    "today": "დღეს",
+    "prevMonth": "წინა თვე",
+    "nextMonth": "შემდეგი თვე",
+    "trades": "{count, plural, one {# პოზიცია} other {# პოზიცია}}",
+    "nav": {
+      "dashboard": "დეშბორდი"
+    }
   }
 }
