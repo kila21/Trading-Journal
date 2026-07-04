@@ -85,6 +85,21 @@
     "acknowledgment": "By submitting a form, you confirm that you have read and agree to Trading Journal's Privacy Policy and Terms & Conditions.",
     "backHome": "Back to home"
   },
+  "riskDisclaimer": {
+    "title": "Risk Disclaimer",
+    "paragraphs": [
+      "All information, material, and content presented on Trading Journal is intended for educational purposes only.",
+      "Trading involves substantial financial risk and may result in the partial or complete loss of capital.",
+      "Past results, examples, or achievements do not guarantee future results.",
+      "Trading Journal does not guarantee any profit, income, or success.",
+      "All decisions are made at the user's own personal responsibility.",
+      "Trading Journal is not liable for financial decisions made by users or any resulting losses.",
+      "Trading Journal is not a registered broker, investment adviser, fund manager, or financial institution.",
+      "Trading Journal does not manage user capital, does not make investments on a user's behalf, and does not provide personalized financial or investment advice.",
+      "All outcomes are individual and depend on the user's knowledge, experience, discipline, and risk management."
+    ],
+    "backHome": "Back to home"
+  },
   "footer": {
     "owner": "Built by Luka",
     "contact": "kilasonialuka@gmail.com",

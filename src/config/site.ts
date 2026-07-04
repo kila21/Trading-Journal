@@ -13,6 +13,6 @@ export const socialLinks = [
 export const footerLinks = [
   { key: "terms", href: "#" },
   { key: "privacy", href: "/privacy" },
-  { key: "riskDisclaimer", href: "#" },
+  { key: "riskDisclaimer", href: "/risk-disclaimer" },
   { key: "about", href: "#about" },
 ] as const;
