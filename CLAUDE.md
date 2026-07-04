@@ -106,14 +106,40 @@ flat in `landing/` — don't create a folder just to hold one file.
 - The generated Prisma client (`src/generated/prisma`) is gitignored (build artifact) —
   `npm run db:generate` runs automatically via `postinstall`, but run it manually after
   pulling schema changes if needed.
+- **Prisma 7's client ships as an ES module and requires `"type": "module"` in the root
+  `package.json`.** Without it, `prisma generate` still succeeds and the generated
+  `PrismaClient` constructs and runs raw queries fine, but every model delegate
+  (`prisma.user`, `prisma.trade`, etc.) silently comes back `undefined` — no error is
+  thrown, it just fails at the call site. This is easy to miss because everything looks
+  fine until you actually query a model. `"type": "module"` is already set; don't remove
+  it.
 
 ## Data layer
 
-Prisma + local SQLite (`DATABASE_URL="file:./dev.db"` at repo root). No models defined
-yet — `Trade`/`Account`/`User` modeling is intentionally deferred to when the real
-dashboard is built. Plan is to swap to a hosted Postgres (Neon/Supabase) via the
-`datasource`/adapter when deploying (Netlify has no built-in DB), keeping app code
-mostly unchanged.
+Prisma + local SQLite (`DATABASE_URL="file:./dev.db"` at repo root). Auth is real as of
+Phase 2 — see the Auth section below. Trading-specific `Trade`/brokerage-`Account`
+modeling is still deferred to when the real dashboard is built. Plan is to swap to a
+hosted Postgres (Neon/Supabase) via the `datasource`/adapter when deploying (Netlify has
+no built-in DB), keeping app code mostly unchanged.
+
+**Naming heads-up for later**: Better Auth's own schema already defines a model named
+`Account` (OAuth/credential accounts, `@@map("account")`) — when the real trading
+`Account` model (brokerage/portfolio account) gets added, it needs a different Prisma
+model name (e.g. `TradingAccount`) to avoid colliding with Better Auth's `Account`.
+
+## Auth
+
+Real email/password auth via [Better Auth](https://better-auth.com) (not Auth.js/NextAuth
+— see `NOTES.md` for why). Key files: `src/lib/auth.ts` (server instance, Prisma adapter),
+`src/lib/auth-client.ts` (React client: `signIn`/`signUp`/`signOut`/`useSession`),
+`src/app/api/auth/[...all]/route.ts` (catch-all route handler), `src/components/auth/`
+(login/register forms, logout button — client components calling `authClient` directly,
+not Server Actions). Route protection is two-layered: `src/proxy.ts` does an optimistic
+cookie-presence check (`getSessionCookie`) to redirect obviously-logged-out visitors,
+and `src/app/[locale]/dashboard/page.tsx` does the authoritative DB-backed
+`auth.api.getSession()` check — don't rely on the proxy check alone when adding new
+protected routes. `/dashboard` is currently a bare placeholder proving the auth flow
+works end-to-end; the real dashboard is still a future phase.
 
 ## Scripts
 
