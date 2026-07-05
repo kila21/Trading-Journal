@@ -98,7 +98,22 @@ model Trade {
   notes      String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  images     TradeImage[]
 
   @@index([userId, tradeDate])
   @@map("trade")
+}
+
+model TradeImage {
+  id         String   @id @default(cuid())
+  tradeId    String
+  trade      Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  timeframe  String
+  storageKey String
+  mimeType   String
+  caption    String?
+  createdAt  DateTime @default(now())
+
+  @@index([tradeId])
+  @@map("trade_image")
 }

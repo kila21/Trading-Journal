@@ -38,6 +38,9 @@ yarn-error.log*
 /dev.db
 /dev.db-journal
 
+# local trade image uploads (dev-only storage, see src/lib/trade-image-storage.ts)
+/uploads
+
 # vercel
 .vercel
 
