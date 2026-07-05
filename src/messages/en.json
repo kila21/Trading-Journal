@@ -186,6 +186,7 @@
     "title": "Dashboard",
     "metaDescription": "Your Trading Journal account dashboard.",
     "logout": "Log out",
+    "accountMenu": "Account menu",
     "netPnl": "Net P&L this month",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",

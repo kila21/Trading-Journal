@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { UserMenu } from "@/components/auth/user-menu";
 import { dashboardNavLinks } from "@/config/dashboard-nav";
 import { PanelToggleIcon } from "@/components/dashboard/icons";
 import { cn } from "@/lib/utils";
@@ -68,7 +68,7 @@ export function Sidebar() {
       <div
         className={cn("border-t border-border p-3", collapsed && "flex justify-center")}
       >
-        <LogoutButton iconOnly={collapsed} />
+        <UserMenu collapsed={collapsed} />
       </div>
     </aside>
   );
