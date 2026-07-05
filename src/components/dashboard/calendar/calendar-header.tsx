@@ -1,8 +1,8 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/dashboard/icons";
-import { formatMonthYear } from "./format-date";
+import { formatMonthYear, toLocale } from "./format-date";
 
 export function CalendarHeader({
   year,
@@ -18,7 +18,8 @@ export function CalendarHeader({
   onToday: () => void;
 }) {
   const t = useTranslations("dashboard");
-  const label = formatMonthYear(new Date(year, month, 1));
+  const locale = toLocale(useLocale());
+  const label = formatMonthYear(new Date(year, month, 1), locale);
 
   return (
     <div className="flex items-center justify-between">

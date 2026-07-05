@@ -55,11 +55,17 @@ export function DayCell({
         "flex min-h-24 flex-col justify-between rounded-lg border p-2",
         onClick && "cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary",
         day.isCurrentMonth ? "border-border bg-surface" : "border-transparent bg-background/40 opacity-40",
+        day.isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background",
       )}
       style={style}
     >
       <div className="flex items-start justify-between gap-1">
-        <span className={cn("text-sm", day.isCurrentMonth ? "text-foreground" : "text-muted")}>
+        <span
+          className={cn(
+            "text-sm",
+            day.isToday ? "font-semibold text-primary" : day.isCurrentMonth ? "text-foreground" : "text-muted",
+          )}
+        >
           {day.day}
         </span>
         {typeof winRate === "number" && (
@@ -78,6 +84,9 @@ export function DayCell({
           <span className="block text-sm font-semibold text-foreground">{pnlLabel}</span>
           {typeof trades === "number" && (
             <span className="block text-xs text-muted">{t("trades", { count: trades })}</span>
+          )}
+          {typeof winRate === "number" && (
+            <span className="block text-xs text-muted">{t("winRateStat", { rate: winRate })}</span>
           )}
         </div>
       )}

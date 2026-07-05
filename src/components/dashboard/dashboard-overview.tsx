@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { NetPnlCard } from "@/components/dashboard/net-pnl-card";
+import { StatsGrid } from "@/components/dashboard/stats-grid";
 import { Calendar } from "@/components/dashboard/calendar/calendar";
 import { useMonthTrades, type TradeDTO } from "@/components/dashboard/trades/use-month-trades";
 import { groupTradesByDay } from "@/components/dashboard/trades/trade-stats";
 import { TradeReviewModal } from "@/components/dashboard/trades/trade-review-modal";
 import { TradeFormModal } from "@/components/dashboard/trades/trade-form-modal";
+import { TradeDetailModal } from "@/components/dashboard/trades/trade-detail-modal";
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -25,8 +27,9 @@ export function DashboardOverview() {
   const dailyStats = useMemo(() => groupTradesByDay(trades), [trades]);
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [modal, setModal] = useState<"review" | "form" | null>(null);
+  const [modal, setModal] = useState<"review" | "form" | "detail" | null>(null);
   const [editingTrade, setEditingTrade] = useState<TradeDTO | undefined>(undefined);
+  const [detailTrade, setDetailTrade] = useState<TradeDTO | undefined>(undefined);
 
   function goToPrevMonth() {
     if (month === 0) {
@@ -69,9 +72,15 @@ export function DashboardOverview() {
     setModal("form");
   }
 
+  function handleReviewTrade(trade: TradeDTO) {
+    setDetailTrade(trade);
+    setModal("detail");
+  }
+
   function handleCloseModal() {
     setModal(null);
     setEditingTrade(undefined);
+    setDetailTrade(undefined);
     setSelectedDate(null);
   }
 
@@ -82,6 +91,7 @@ export function DashboardOverview() {
   return (
     <div className="space-y-6 p-6">
       <NetPnlCard dailyStats={dailyStats} />
+      <StatsGrid dailyStats={dailyStats} />
       <Calendar
         year={year}
         month={month}
@@ -99,6 +109,7 @@ export function DashboardOverview() {
           onClose={handleCloseModal}
           onAddTrade={handleAddTrade}
           onEditTrade={handleEditTrade}
+          onReviewTrade={handleReviewTrade}
         />
       )}
       {selectedDate && modal === "form" && (
@@ -107,6 +118,13 @@ export function DashboardOverview() {
           trade={editingTrade}
           onClose={handleCloseModal}
           onSaved={refetch}
+        />
+      )}
+      {modal === "detail" && detailTrade && (
+        <TradeDetailModal
+          trade={detailTrade}
+          onClose={handleCloseModal}
+          onEdit={() => handleEditTrade(detailTrade)}
         />
       )}
     </div>

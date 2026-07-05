@@ -229,9 +229,33 @@ all backed by a real `Trade` model now, not mock data.
   `position: fixed`, not CSS centering — a plain absolutely-positioned tooltip
   escaped/clipped unpredictably inside the scrollable dialog depending on where the
   icon sat; `fixed` positioning escapes that overflow/clipping model entirely.
-- Not done yet: image/screenshot upload on trades (deferred — needs a storage
-  decision, local disk vs. cloud, that hasn't been made), and the brokerage
-  `Account` model from item 6 above.
+- **Trade detail review + chart images**: each trade row in the review modal now
+  has a "Review" button (next to "Edit") opening `trade-detail-modal.tsx` — a
+  wider modal with a properly laid-out summary (not the compact one-line version
+  from the list) and a "Chart timeframes" section: pick a timeframe (1m/5m/15m/
+  1H/4H/Daily/Weekly, `src/config/trade-timeframes.ts` — not translated, same
+  call as calendar month names), upload a screenshot, write a caption explaining
+  why it matters. New `TradeImage` model, one-to-many from `Trade`.
+  **Storage is local disk for now**, behind a one-file interface
+  (`src/lib/trade-image-storage.ts`, `save`/`read`/`delete`) — same pragmatic
+  call as SQLite. Images are served through `/api/trades/images/[imageId]`
+  rather than `public/`, so the URL contract stays stable when this swaps to
+  real object storage (Netlify Blobs or Supabase Storage are the natural picks)
+  before deploying — only the storage implementation changes, not the routes,
+  components, or stored URLs. Uploads are validated server-side (PNG/JPEG/WEBP
+  only, 5MB max) in the route handler itself, not `validate-trade.ts`, since it
+  needs the raw `multipart/form-data` `File`, not JSON.
+- Not done yet: the brokerage `Account` model from item 6 above.
+
+## Thought about later, not decided yet
+
+Loose ideas for what comes after the trade detail/image work above — no design
+work done on any of these, just capturing them so they're not lost:
+
+- An analytics page (win rate over time, best/worst setups, that kind of thing).
+- A monthly (or broader) overview page, distinct from the day-by-day calendar.
+- Password reset + email verification (see item 9 above — still open from Phase 2).
+- Profile/account settings page.
 
 ## If you only open 7 files, open these
 

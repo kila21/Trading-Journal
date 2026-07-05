@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLocale } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import type { DailyStats } from "@/components/dashboard/trades/trade-stats";
+import { toLocale } from "./format-date";
 import { CalendarHeader } from "./calendar-header";
 import { DayCell } from "./day-cell";
 import { buildCalendarWeeks, getWeekdayLabels } from "./utils";
@@ -25,8 +27,9 @@ export function Calendar({
   onToday: () => void;
   onDayClick: (date: Date) => void;
 }) {
+  const locale = toLocale(useLocale());
   const weeks = useMemo(() => buildCalendarWeeks(year, month), [year, month]);
-  const weekdayLabels = useMemo(() => getWeekdayLabels(), []);
+  const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
 
   // Shade intensity is relative to the biggest win/loss in the visible month,
   // so the standout day is always fully saturated and quieter days still read
