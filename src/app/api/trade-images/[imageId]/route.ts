@@ -73,7 +73,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ im
       id: image.id,
       timeframe: image.timeframe,
       caption: image.caption,
-      url: `/api/trades/images/${image.id}`,
+      url: `/api/trade-images/${image.id}`,
     },
   });
 }

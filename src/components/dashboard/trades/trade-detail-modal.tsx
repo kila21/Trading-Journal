@@ -7,7 +7,7 @@ import { formatFullDate, toLocale } from "@/components/dashboard/calendar/format
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { cn } from "@/lib/utils";
 import { TradeImageGallery } from "./trade-image-gallery";
-import { getTradingSession, sessionTranslationKeys } from "./trade-session";
+import { getTradingSession, sessionTranslationKeys } from "./trading-session";
 import type { TradeDTO } from "./use-month-trades";
 
 export function TradeDetailModal({

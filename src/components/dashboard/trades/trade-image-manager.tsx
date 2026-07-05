@@ -55,7 +55,7 @@ function ImageCard({ image, onChanged }: { image: TradeImageDTO; onChanged: () =
 
   async function handleSave() {
     setPending(true);
-    await fetch(`/api/trades/images/${image.id}`, {
+    await fetch(`/api/trade-images/${image.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ timeframe, caption }),
@@ -67,7 +67,7 @@ function ImageCard({ image, onChanged }: { image: TradeImageDTO; onChanged: () =
 
   async function handleDelete() {
     if (!window.confirm(t("confirmDeleteImage"))) return;
-    await fetch(`/api/trades/images/${image.id}`, { method: "DELETE" });
+    await fetch(`/api/trade-images/${image.id}`, { method: "DELETE" });
     onChanged();
   }
 

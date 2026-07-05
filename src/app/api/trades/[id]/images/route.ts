@@ -44,7 +44,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       id: image.id,
       timeframe: image.timeframe,
       caption: image.caption,
-      url: `/api/trades/images/${image.id}`,
+      url: `/api/trade-images/${image.id}`,
     })),
   });
 }
@@ -100,7 +100,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         id: image.id,
         timeframe: image.timeframe,
         caption: image.caption,
-        url: `/api/trades/images/${image.id}`,
+        url: `/api/trade-images/${image.id}`,
       },
     },
     { status: 201 },

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { formatPnl } from "@/components/dashboard/format-pnl";
-import { StatTile } from "@/components/dashboard/stat-tile";
+import { StatTile } from "@/components/dashboard/overview/stat-tile";
 import { computeMonthSummary, type DailyStats } from "@/components/dashboard/trades/trade-stats";
 
 export function StatsGrid({ dailyStats }: { dailyStats: Map<number, DailyStats> }) {

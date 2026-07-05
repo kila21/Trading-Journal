@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { NetPnlCard } from "@/components/dashboard/net-pnl-card";
-import { StatsGrid } from "@/components/dashboard/stats-grid";
+import { NetPnlCard } from "@/components/dashboard/overview/net-pnl-card";
+import { StatsGrid } from "@/components/dashboard/overview/stats-grid";
 import { Calendar } from "@/components/dashboard/calendar/calendar";
 import { useMonthTrades, type TradeDTO } from "@/components/dashboard/trades/use-month-trades";
 import { groupTradesByDay } from "@/components/dashboard/trades/trade-stats";

@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
+import { DashboardOverview } from "@/components/dashboard/overview/dashboard-overview";
 import { createMetadata } from "@/lib/metadata";
 
 export const generateMetadata = createMetadata(async (locale) => {

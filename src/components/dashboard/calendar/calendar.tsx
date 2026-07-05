@@ -8,7 +8,7 @@ import type { DailyStats } from "@/components/dashboard/trades/trade-stats";
 import { toLocale } from "./format-date";
 import { CalendarHeader } from "./calendar-header";
 import { DayCell } from "./day-cell";
-import { buildCalendarWeeks, getWeekdayLabels } from "./utils";
+import { buildCalendarWeeks, getWeekdayLabels } from "./calendar-grid";
 
 export function Calendar({
   year,
