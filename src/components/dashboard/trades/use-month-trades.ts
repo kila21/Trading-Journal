@@ -1,20 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-
-export interface TradeDTO {
-  id: string;
-  symbol: string;
-  direction: "long" | "short";
-  entryPrice: number;
-  exitPrice: number;
-  takeProfit: number | null;
-  stopLoss: number | null;
-  size: number;
-  pnl: number;
-  tradeDate: string;
-  notes: string | null;
-}
+import type { TradeDTO } from "@/types/trade";
 
 export function useMonthTrades(year: number, month: number) {
   const [trades, setTrades] = useState<TradeDTO[]>([]);

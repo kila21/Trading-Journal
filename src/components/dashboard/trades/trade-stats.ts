@@ -1,10 +1,6 @@
-import type { TradeDTO } from "./use-month-trades";
-
-export interface DailyStats {
-  pnl: number;
-  trades: number;
-  wins: number;
-}
+// Aggregates trades into per-day P&L stats and derives month-level summaries
+// (best/worst day, current streak).
+import type { TradeDTO, DailyStats, MonthSummary } from "@/types/trade";
 
 export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
   const stats = new Map<number, DailyStats>();
@@ -21,12 +17,6 @@ export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
   }
 
   return stats;
-}
-
-export interface MonthSummary {
-  bestDay: { day: number; pnl: number } | null;
-  worstDay: { day: number; pnl: number } | null;
-  streak: { type: "win" | "loss"; count: number } | null;
 }
 
 export function computeMonthSummary(dailyStats: Map<number, DailyStats>): MonthSummary {

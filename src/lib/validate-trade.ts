@@ -1,15 +1,5 @@
-export interface TradeInput {
-  symbol: string;
-  direction: "long" | "short";
-  entryPrice: number;
-  exitPrice: number;
-  takeProfit: number | null;
-  stopLoss: number | null;
-  size: number;
-  pnl: number;
-  tradeDate: string;
-  notes: string | null;
-}
+// Hand-rolled server-side validation for trade create/update payloads.
+import type { TradeInput } from "@/types/trade";
 
 type ValidationResult = { ok: true; data: TradeInput } | { ok: false; error: string };
 

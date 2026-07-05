@@ -1,11 +1,6 @@
-import { formatWeekday, type Locale } from "./format-date";
-
-export interface CalendarDay {
-  date: Date;
-  day: number;
-  isCurrentMonth: boolean;
-  isToday: boolean;
-}
+// Builds the Monday-first week grid for the calendar and its weekday labels.
+import { formatWeekday } from "./format-date";
+import type { Locale, CalendarDay } from "@/types/calendar";
 
 function isSameDate(a: Date, b: Date): boolean {
   return (

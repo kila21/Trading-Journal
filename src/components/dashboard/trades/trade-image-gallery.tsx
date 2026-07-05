@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { XIcon } from "@/components/dashboard/icons";
 import { cn } from "@/lib/utils";
-import { useTradeImages, type TradeImageDTO } from "./use-trade-images";
+import { useTradeImages } from "./use-trade-images";
 import { AddTimeframeSection } from "./trade-image-manager";
+import type { TradeImageDTO } from "@/types/trade";
 
 /**
  * Read-only display for the trade review modal: each timeframe gets its own

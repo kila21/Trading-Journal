@@ -1,14 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { TradeTimeframe } from "@/config/trade-timeframes";
-
-export interface TradeImageDTO {
-  id: string;
-  timeframe: TradeTimeframe;
-  caption: string | null;
-  url: string;
-}
+import type { TradeImageDTO } from "@/types/trade";
 
 export function useTradeImages(tradeId: string) {
   const [images, setImages] = useState<TradeImageDTO[]>([]);

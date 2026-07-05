@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PencilIcon } from "@/components/dashboard/icons";
-import { tradeTimeframes, type TradeTimeframe } from "@/config/trade-timeframes";
+import { tradeTimeframes } from "@/config/trade-timeframes";
 import { cn } from "@/lib/utils";
-import { useTradeImages, type TradeImageDTO } from "./use-trade-images";
+import { useTradeImages } from "./use-trade-images";
+import type { TradeImageDTO } from "@/types/trade";
+import type { TradeTimeframe } from "@/config/trade-timeframes";
 
 /**
  * Network-backed image management for a trade that already exists (has an

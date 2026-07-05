@@ -1,6 +1,6 @@
-import { tradingSessions, type TradingSession } from "@/config/trade-sessions";
-
-export type SessionName = TradingSession["name"];
+// Resolves which market trading session (Asian/London/NY) a trade's timestamp falls into.
+import { tradingSessions } from "@/config/trade-sessions";
+import type { TradingSession, SessionName } from "@/types/trading-session";
 
 export const sessionTranslationKeys: Record<SessionName, string> = {
   Asian: "sessionAsian",

@@ -1,3 +1,4 @@
+// Shared PrismaClient singleton, cached on globalThis to survive dev HMR.
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
 

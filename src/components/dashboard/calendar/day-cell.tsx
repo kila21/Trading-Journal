@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import type { CalendarDay } from "./calendar-grid";
+import type { CalendarDay } from "@/types/calendar";
 
 export function DayCell({
   day,

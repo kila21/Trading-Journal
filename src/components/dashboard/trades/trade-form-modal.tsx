@@ -2,7 +2,7 @@
 
 import { Dialog } from "@/components/ui/dialog";
 import { TradeForm } from "./trade-form";
-import type { TradeDTO } from "./use-month-trades";
+import type { TradeDTO } from "@/types/trade";
 
 export function TradeFormModal({
   date,

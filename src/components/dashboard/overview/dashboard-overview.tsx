@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { NetPnlCard } from "@/components/dashboard/overview/net-pnl-card";
 import { StatsGrid } from "@/components/dashboard/overview/stats-grid";
 import { Calendar } from "@/components/dashboard/calendar/calendar";
-import { useMonthTrades, type TradeDTO } from "@/components/dashboard/trades/use-month-trades";
+import { useMonthTrades } from "@/components/dashboard/trades/use-month-trades";
 import { groupTradesByDay } from "@/components/dashboard/trades/trade-stats";
 import { TradeReviewModal } from "@/components/dashboard/trades/trade-review-modal";
 import { TradeFormModal } from "@/components/dashboard/trades/trade-form-modal";
 import { TradeDetailModal } from "@/components/dashboard/trades/trade-detail-modal";
+import type { TradeDTO } from "@/types/trade";
 
 function isSameDay(a: Date, b: Date): boolean {
   return (

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useLocale } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { formatPnl } from "@/components/dashboard/format-pnl";
-import type { DailyStats } from "@/components/dashboard/trades/trade-stats";
+import type { DailyStats } from "@/types/trade";
 import { toLocale } from "./format-date";
 import { CalendarHeader } from "./calendar-header";
 import { DayCell } from "./day-cell";

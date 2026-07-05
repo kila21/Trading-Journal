@@ -9,5 +9,3 @@ export const tradingSessions = [
   { name: "NY Lunch", start: "17:00", end: "18:30" },
   { name: "NY PM", start: "18:30", end: "22:00" },
 ] as const;
-
-export type TradingSession = (typeof tradingSessions)[number];

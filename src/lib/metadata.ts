@@ -1,3 +1,5 @@
+// Builds per-locale page metadata (title, description, Open Graph, Twitter)
+// from translated content.
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 

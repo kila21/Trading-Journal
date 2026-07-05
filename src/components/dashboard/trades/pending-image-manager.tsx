@@ -7,16 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PencilIcon } from "@/components/dashboard/icons";
-import { tradeTimeframes, type TradeTimeframe } from "@/config/trade-timeframes";
+import { tradeTimeframes } from "@/config/trade-timeframes";
 import { cn } from "@/lib/utils";
-
-export interface PendingImageEntry {
-  localId: string;
-  timeframe: TradeTimeframe;
-  file: File;
-  caption: string;
-  previewUrl: string;
-}
+import type { PendingImageEntry } from "@/types/trade";
+import type { TradeTimeframe } from "@/config/trade-timeframes";
 
 /**
  * Local-only staging for the create form — a brand-new trade has no id yet,

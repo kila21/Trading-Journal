@@ -1,4 +1,5 @@
-export type Locale = "en" | "ka";
+// Locale-aware weekday/month/date formatting for the calendar.
+import type { Locale } from "@/types/calendar";
 
 /**
  * `useLocale()` from next-intl types as plain `string` (no global locale

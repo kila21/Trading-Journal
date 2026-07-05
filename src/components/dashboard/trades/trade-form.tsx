@@ -14,8 +14,8 @@ import { ChevronRightIcon, ImageIcon } from "@/components/dashboard/icons";
 import { tradeSymbols } from "@/config/trade-symbols";
 import { cn } from "@/lib/utils";
 import { TradeImageManager } from "./trade-image-manager";
-import { PendingImageManager, type PendingImageEntry } from "./pending-image-manager";
-import type { TradeDTO } from "./use-month-trades";
+import { PendingImageManager } from "./pending-image-manager";
+import type { TradeDTO, PendingImageEntry } from "@/types/trade";
 
 function toTimeInputValue(date: Date): string {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;

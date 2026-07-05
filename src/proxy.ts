@@ -1,3 +1,5 @@
+// next-intl locale routing plus an optimistic cookie-based auth redirect for
+// /dashboard (the authoritative check happens server-side on the page itself).
 import createMiddleware from "next-intl/middleware";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";

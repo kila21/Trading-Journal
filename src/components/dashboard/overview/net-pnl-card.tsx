@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { TrendDownIcon, TrendUpIcon } from "@/components/dashboard/icons";
 import { cn } from "@/lib/utils";
-import type { DailyStats } from "@/components/dashboard/trades/trade-stats";
+import type { DailyStats } from "@/types/trade";
 
 export function NetPnlCard({ dailyStats }: { dailyStats: Map<number, DailyStats> }) {
   const t = useTranslations("dashboard");
