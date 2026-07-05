@@ -16,7 +16,7 @@ export function TradeFormModal({
   onSaved: () => void;
 }) {
   return (
-    <Dialog onClose={onClose}>
+    <Dialog onClose={onClose} className="max-w-2xl">
       <TradeForm date={date} trade={trade} onClose={onClose} onSaved={onSaved} />
     </Dialog>
   );

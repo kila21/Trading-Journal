@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, type ChangeEvent, type SubmitEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { formatFullDate } from "@/components/dashboard/calendar/format-date";
+import { formatFullDate, toLocale } from "@/components/dashboard/calendar/format-date";
 import { formatPnl } from "@/components/dashboard/format-pnl";
+import { ChevronRightIcon, ImageIcon } from "@/components/dashboard/icons";
 import { tradeSymbols } from "@/config/trade-symbols";
 import { cn } from "@/lib/utils";
+import { TradeImageManager } from "./trade-image-manager";
+import { PendingImageManager, type PendingImageEntry } from "./pending-image-manager";
 import type { TradeDTO } from "./use-month-trades";
 
 function toTimeInputValue(date: Date): string {
@@ -110,9 +113,18 @@ export function TradeForm({
   onSaved: () => void;
 }) {
   const t = useTranslations("dashboard");
+  const locale = toLocale(useLocale());
   const [form, setForm] = useState(() => formStateFor(trade));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createdTrade, setCreatedTrade] = useState<TradeDTO | undefined>(undefined);
+  const [pendingImages, setPendingImages] = useState<PendingImageEntry[]>([]);
+  const [imagesOpen, setImagesOpen] = useState(false);
+
+  // Once a create succeeds, `createdTrade` takes over from the `trade` prop —
+  // this is what prevents a retry (e.g. after a failed image upload) from
+  // POSTing a second trade instead of PATCHing the one that now exists.
+  const effectiveTrade = trade ?? createdTrade;
 
   const takeProfitWarning = hasTakeProfitWarning(form.direction, form.entryPrice, form.takeProfit);
   const stopLossWarning = hasStopLossWarning(form.direction, form.entryPrice, form.stopLoss);
@@ -151,8 +163,10 @@ export function TradeForm({
       notes: form.notes,
     };
 
-    const response = trade
-      ? await fetch(`/api/trades/${trade.id}`, {
+    const isCreating = !effectiveTrade;
+
+    const response = effectiveTrade
+      ? await fetch(`/api/trades/${effectiveTrade.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -163,24 +177,57 @@ export function TradeForm({
           body: JSON.stringify(payload),
         });
 
-    setPending(false);
-
     if (!response.ok) {
+      setPending(false);
       const body = await response.json().catch(() => null);
       setError(body?.error ?? t("errorGeneric"));
       return;
     }
 
+    const body = await response.json();
+    const savedTrade: TradeDTO = body.trade;
+
+    if (isCreating) {
+      setCreatedTrade(savedTrade);
+    }
+
+    let uploadFailed = false;
+
+    if (isCreating && pendingImages.length > 0) {
+      for (const entry of pendingImages) {
+        const formData = new FormData();
+        formData.append("file", entry.file);
+        formData.append("timeframe", entry.timeframe);
+        formData.append("caption", entry.caption);
+
+        const uploadResponse = await fetch(`/api/trades/${savedTrade.id}/images`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) uploadFailed = true;
+      }
+      setPendingImages([]);
+    }
+
+    setPending(false);
     onSaved();
+
+    if (uploadFailed) {
+      setError(t("imageUploadFailed"));
+      setImagesOpen(true);
+      return;
+    }
+
     onClose();
   }
 
   async function handleDelete() {
-    if (!trade) return;
+    if (!effectiveTrade) return;
     if (!window.confirm(t("confirmDeleteTrade"))) return;
 
     setPending(true);
-    const response = await fetch(`/api/trades/${trade.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/trades/${effectiveTrade.id}`, { method: "DELETE" });
     setPending(false);
 
     if (!response.ok) {
@@ -194,8 +241,8 @@ export function TradeForm({
 
   return (
     <>
-      <h2 className="text-lg font-semibold">{trade ? t("editTrade") : t("newTrade")}</h2>
-      <p className="mt-1 text-sm text-muted">{formatFullDate(date)}</p>
+      <h2 className="text-lg font-semibold">{effectiveTrade ? t("editTrade") : t("newTrade")}</h2>
+      <p className="mt-1 text-sm text-muted">{formatFullDate(date, locale)}</p>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-left">
         <div className="grid grid-cols-2 gap-4">
@@ -333,10 +380,49 @@ export function TradeForm({
           <Textarea id="notes" name="notes" value={form.notes} onChange={handleChange} />
         </div>
 
+        <div className="border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={() => setImagesOpen((prev) => !prev)}
+            aria-expanded={imagesOpen}
+            aria-label={imagesOpen ? t("collapseChartTimeframes") : t("expandChartTimeframes")}
+            className={cn(
+              "flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-background/40 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-background/60",
+              imagesOpen && "rounded-b-none border-b-transparent",
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <ImageIcon className="size-4 text-muted" />
+              {t("chartTimeframes")}
+            </span>
+            <ChevronRightIcon className={cn("size-4 text-muted transition-transform", imagesOpen && "rotate-90")} />
+          </button>
+          {imagesOpen && (
+            <div className="rounded-b-lg border border-t-0 border-border bg-background/20 p-4">
+              {effectiveTrade ? (
+                <TradeImageManager tradeId={effectiveTrade.id} />
+              ) : (
+                <PendingImageManager
+                  entries={pendingImages}
+                  onAdd={(entry) => setPendingImages((prev) => [...prev, entry])}
+                  onRemove={(localId) =>
+                    setPendingImages((prev) => prev.filter((entry) => entry.localId !== localId))
+                  }
+                  onUpdate={(localId, updates) =>
+                    setPendingImages((prev) =>
+                      prev.map((entry) => (entry.localId === localId ? { ...entry, ...updates } : entry)),
+                    )
+                  }
+                />
+              )}
+            </div>
+          )}
+        </div>
+
         {error && <p className="text-sm text-danger">{error}</p>}
 
         <div className="flex items-center justify-between gap-3 pt-2">
-          {trade ? (
+          {effectiveTrade ? (
             <Button type="button" variant="outline" disabled={pending} onClick={handleDelete}>
               {t("deleteTrade")}
             </Button>
@@ -348,7 +434,7 @@ export function TradeForm({
               {t("cancel")}
             </Button>
             <Button type="submit" disabled={pending}>
-              {trade ? t("saveTradeSubmit") : t("addTradeSubmit")}
+              {effectiveTrade ? t("saveTradeSubmit") : t("addTradeSubmit")}
             </Button>
           </div>
         </div>
