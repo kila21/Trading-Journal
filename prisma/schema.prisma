@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // Trade/Account (trading) modeling is still a future phase — these models are
@@ -81,7 +81,8 @@ model Verification {
 }
 
 // direction is a plain string ("long" | "short"), validated in
-// src/lib/validate-trade.ts — SQLite's Prisma connector doesn't support enums.
+// src/lib/validate-trade.ts — kept as a string rather than a Postgres enum to
+// avoid an enum migration for what's still a 2-value field.
 model Trade {
   id         String   @id @default(cuid())
   userId     String
