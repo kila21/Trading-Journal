@@ -182,6 +182,22 @@
     "errorPasswordTooLong": "პაროლი არ უნდა აღემატებოდეს 128 სიმბოლოს.",
     "errorInvalidEmail": "გთხოვთ შეიყვანოთ სწორი ელფოსტის მისამართი."
   },
+  "passwordRecovery": {
+    "menuLabel": "პაროლის შეცვლა",
+    "title": "პაროლის შეცვლა",
+    "description": "შეიყვანეთ თქვენი მიმდინარე პაროლი და აირჩიეთ ახალი.",
+    "currentPasswordLabel": "მიმდინარე პაროლი",
+    "newPasswordLabel": "ახალი პაროლი",
+    "confirmPasswordLabel": "გაიმეორეთ ახალი პაროლი",
+    "submit": "პაროლის განახლება",
+    "cancel": "გაუქმება",
+    "success": "პაროლი განახლდა.",
+    "errorPasswordMismatch": "პაროლები არ ემთხვევა.",
+    "errorPasswordTooShort": "პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს.",
+    "errorPasswordTooLong": "პაროლი არ უნდა აღემატებოდეს 128 სიმბოლოს.",
+    "errorInvalidCurrentPassword": "მიმდინარე პაროლი არასწორია.",
+    "errorGeneric": "დაფიქსირდა შეცდომა. გთხოვთ სცადოთ თავიდან."
+  },
   "dashboard": {
     "title": "დეშბორდი",
     "metaDescription": "თქვენი Trading Journal ანგარიშის დეშბორდი.",

@@ -13,6 +13,10 @@ export function authErrorMessage(t: Translator, code: string | undefined): strin
       return t("errorPasswordTooLong");
     case "INVALID_EMAIL":
       return t("errorInvalidEmail");
+    case "INVALID_PASSWORD":
+      return t("errorInvalidCurrentPassword");
+    case "CREDENTIAL_ACCOUNT_NOT_FOUND":
+      return t("errorGeneric");
     default:
       return t("errorGeneric");
   }

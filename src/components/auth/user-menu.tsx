@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
-import { UserIcon, LogoutIcon } from "@/components/dashboard/icons";
+import { UserIcon, LogoutIcon, KeyIcon } from "@/components/dashboard/icons";
+import { PasswordRecoveryModal } from "@/components/auth/password-recovery-modal";
 import { cn } from "@/lib/utils";
 
 function getInitials(name: string) {
@@ -15,10 +16,12 @@ function getInitials(name: string) {
 
 export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
   const t = useTranslations("dashboard");
+  const tPassword = useTranslations("passwordRecovery");
   const router = useRouter();
   const { data } = useSession();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,6 +86,19 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
           <button
             type="button"
             role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setShowPasswordModal(true);
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background"
+          >
+            <KeyIcon className="size-4" />
+            {tPassword("menuLabel")}
+          </button>
+          <div className="my-1 h-px bg-border" />
+          <button
+            type="button"
+            role="menuitem"
             disabled={pending}
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
@@ -91,6 +107,9 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
             {t("logout")}
           </button>
         </div>
+      )}
+      {showPasswordModal && (
+        <PasswordRecoveryModal onClose={() => setShowPasswordModal(false)} />
       )}
     </div>
   );

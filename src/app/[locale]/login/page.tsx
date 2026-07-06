@@ -1,17 +1,24 @@
-import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Card } from "@/components/ui/card";
 import { LoginForm } from "@/components/auth/login-form";
 import { createMetadata } from "@/lib/metadata";
+import { redirectIfAuthenticated } from "@/lib/require-guest";
 
 export const generateMetadata = createMetadata(async (locale) => {
   const t = await getTranslations({ locale, namespace: "authStub" });
   return { title: t("loginTitle"), description: t("loginDescription") };
 });
 
-export default function LoginPage() {
-  const t = useTranslations("authStub");
+export default async function LoginPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  await redirectIfAuthenticated(locale);
+
+  const t = await getTranslations("authStub");
 
   return (
     <main className="relative flex flex-1 items-center justify-center px-6 py-20">

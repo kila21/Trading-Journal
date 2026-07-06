@@ -182,6 +182,22 @@
     "errorPasswordTooLong": "Password must be no more than 128 characters.",
     "errorInvalidEmail": "Please enter a valid email address."
   },
+  "passwordRecovery": {
+    "menuLabel": "Change password",
+    "title": "Change password",
+    "description": "Enter your current password and choose a new one.",
+    "currentPasswordLabel": "Current password",
+    "newPasswordLabel": "New password",
+    "confirmPasswordLabel": "Confirm new password",
+    "submit": "Update password",
+    "cancel": "Cancel",
+    "success": "Password updated.",
+    "errorPasswordMismatch": "Passwords do not match.",
+    "errorPasswordTooShort": "Password must be at least 8 characters.",
+    "errorPasswordTooLong": "Password must be no more than 128 characters.",
+    "errorInvalidCurrentPassword": "Current password is incorrect.",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
   "dashboard": {
     "title": "Dashboard",
     "metaDescription": "Your Trading Journal account dashboard.",

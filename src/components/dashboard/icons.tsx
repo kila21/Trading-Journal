@@ -167,6 +167,23 @@ export function UserIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function KeyIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="8" cy="15" r="4" />
+      <path d="M10.5 12.5L20 3M20 3v4M20 3h-4" />
+    </svg>
+  );
+}
+
 export function LogoutIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg

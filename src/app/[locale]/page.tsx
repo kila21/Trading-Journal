@@ -4,8 +4,16 @@ import { ResourcesSection } from "@/components/landing/resources/resources-secti
 import { FaqSection } from "@/components/landing/faq/faq-section";
 import { AboutCard } from "@/components/landing/about/about-card";
 import { Footer } from "@/components/landing/footer";
+import { redirectIfAuthenticated } from "@/lib/require-guest";
 
-export default function Home() {
+export default async function Home({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  await redirectIfAuthenticated(locale);
+
   return (
     <>
       <Navbar />
