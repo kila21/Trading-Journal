@@ -48,9 +48,12 @@ delete any time (`rm -rf .next` is a normal "something looks stale" fix).
   route protection (`proxy.ts` optimistic + `dashboard/page.tsx` authoritative).
 - **Phase 3 — dashboard:** in progress. Sidebar, month calendar (color-coded by
   P&L), trade create/edit/review/detail modals, and chart-image uploads all
-  work against real `Trade`/`TradeImage` models (SQLite via `dev.db`).
-- **Not done yet:** brokerage `Account` model, analytics page, password
-  reset/email verification, automated tests, hosted Postgres swap for deploy.
+  work against real `Trade`/`TradeImage` models.
+- **Deployed:** live on Netlify, Neon Postgres (separate `dev`/`production`
+  branches — see `src/lib/prisma.ts`), trade chart images on Netlify Blobs in
+  production (`IMAGE_STORAGE_DRIVER=blobs`) vs. local disk in dev.
+- **Not done yet:** brokerage `Account` model, analytics page, email
+  verification, automated tests.
 
 ## If you only open 6 files, open these
 
@@ -129,7 +132,7 @@ id (an image doesn't need its parent trade in the URL once it exists).
 |---|---|
 | `src/app/api/trades/[id]/images/route.ts` | `GET` (list) / `POST` (upload) for one trade's images. |
 | `src/app/api/trade-images/[imageId]/route.ts` | `GET` (serve the file) / `PATCH` (edit timeframe+caption) / `DELETE` — by image id alone. |
-| `src/lib/trade-image-storage.ts` | Storage interface (`save`/`read`/`delete`) — local disk under `uploads/trade-images/` today, swappable for object storage later without touching routes or components. |
+| `src/lib/trade-image-storage.ts` | Storage interface (`save`/`read`/`delete`) — picks `trade-image-storage-local.ts` (disk, `uploads/trade-images/`) or `trade-image-storage-blobs.ts` (Netlify Blobs) based on `IMAGE_STORAGE_DRIVER`. Local dev always uses disk; Netlify sets the env var to switch to Blobs. Routes/components never touch either implementation directly. |
 | `src/components/dashboard/trades/use-trade-images.ts` | Client hook — fetches images for an existing trade. |
 | `src/components/dashboard/trades/trade-image-manager.tsx` | Network-backed manager for an existing trade (Review/Edit flows). |
 | `src/components/dashboard/trades/pending-image-manager.tsx` | Local-only staging for the create form — a brand-new trade has no id to upload to yet, so files just sit in memory until the trade is saved. |
