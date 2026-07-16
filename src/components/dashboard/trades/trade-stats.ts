@@ -1,6 +1,6 @@
 // Aggregates trades into per-day P&L stats and derives month-level summaries
-// (best/worst day, current streak).
-import type { TradeDTO, DailyStats, MonthSummary } from "@/types/trade";
+// (best/worst day, current streak, equity curve, max drawdown).
+import type { TradeDTO, DailyStats, MonthSummary, EquityPoint } from "@/types/trade";
 
 export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
   const stats = new Map<number, DailyStats>();
@@ -51,4 +51,39 @@ function computeStreak(dailyStats: Map<number, DailyStats>): MonthSummary["strea
     count++;
   }
   return { type, count };
+}
+
+/**
+ * Cumulative P&L after each trade, in chronological order, prefixed with a
+ * synthetic point-0 baseline at $0 so the curve always starts from the
+ * y-axis origin. Trade-level (not day-level) so same-day trades still show
+ * as separate steps — a day-bucketed sum would hide an intra-day dip.
+ */
+function buildEquityCurve(trades: TradeDTO[]): EquityPoint[] {
+  const sorted = [...trades].sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
+  const points: EquityPoint[] = [{ point: 0, value: 0 }];
+  let running = 0;
+  for (const trade of sorted) {
+    running += trade.pnl;
+    points.push({ point: points.length, value: running });
+  }
+  return points;
+}
+
+export function computeEquityCurve(trades: TradeDTO[]): EquityPoint[] {
+  return buildEquityCurve(trades);
+}
+
+/**
+ * Largest peak-to-trough decline in cumulative P&L, as a dollar amount
+ * (negative, or 0 when the equity curve never dips below a prior high).
+ */
+export function computeMaxDrawdown(trades: TradeDTO[]): number {
+  let peak = 0;
+  let maxDrawdown = 0;
+  for (const { value } of buildEquityCurve(trades)) {
+    peak = Math.max(peak, value);
+    maxDrawdown = Math.min(maxDrawdown, value - peak);
+  }
+  return maxDrawdown;
 }

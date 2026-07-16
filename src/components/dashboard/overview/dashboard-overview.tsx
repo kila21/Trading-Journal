@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { NetPnlCard } from "@/components/dashboard/overview/net-pnl-card";
 import { StatsGrid } from "@/components/dashboard/overview/stats-grid";
+import { EquityCurveCard } from "@/components/dashboard/overview/equity-curve-card";
+import { ViewToggle, type OverviewView } from "@/components/dashboard/overview/view-toggle";
 import { Calendar } from "@/components/dashboard/calendar/calendar";
 import { useMonthTrades } from "@/components/dashboard/trades/use-month-trades";
 import { groupTradesByDay } from "@/components/dashboard/trades/trade-stats";
@@ -26,6 +28,7 @@ export function DashboardOverview() {
 
   const { trades, refetch } = useMonthTrades(year, month);
   const dailyStats = useMemo(() => groupTradesByDay(trades), [trades]);
+  const [activeView, setActiveView] = useState<OverviewView>("calendar");
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [modal, setModal] = useState<"review" | "form" | "detail" | null>(null);
@@ -92,16 +95,23 @@ export function DashboardOverview() {
   return (
     <div className="space-y-6 p-6">
       <NetPnlCard year={year} month={month} dailyStats={dailyStats} />
-      <StatsGrid dailyStats={dailyStats} />
-      <Calendar
-        year={year}
-        month={month}
-        dailyStats={dailyStats}
-        onPrevMonth={goToPrevMonth}
-        onNextMonth={goToNextMonth}
-        onToday={goToToday}
-        onDayClick={handleDayClick}
-      />
+      <StatsGrid dailyStats={dailyStats} trades={trades} />
+
+      <ViewToggle value={activeView} onChange={setActiveView} />
+
+      {activeView === "calendar" ? (
+        <Calendar
+          year={year}
+          month={month}
+          dailyStats={dailyStats}
+          onPrevMonth={goToPrevMonth}
+          onNextMonth={goToNextMonth}
+          onToday={goToToday}
+          onDayClick={handleDayClick}
+        />
+      ) : (
+        <EquityCurveCard trades={trades} />
+      )}
 
       {selectedDate && modal === "review" && (
         <TradeReviewModal

@@ -62,3 +62,11 @@ export interface MonthSummary {
   worstDay: { day: number; pnl: number } | null;
   streak: { type: "win" | "loss"; count: number } | null;
 }
+
+// A point on the cumulative-P&L equity curve. `point` 0 is the synthetic
+// starting baseline (before any trade); 1..N follow the Nth trade in
+// chronological order.
+export interface EquityPoint {
+  point: number;
+  value: number;
+}
