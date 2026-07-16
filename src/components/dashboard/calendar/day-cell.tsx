@@ -8,28 +8,33 @@ import type { CalendarDay } from "@/types/calendar";
 export function DayCell({
   day,
   pnlLabel,
-  isProfit,
+  tone,
   intensity = 0,
   trades,
   winRate,
+  sessionLabel,
   onClick,
 }: {
   day: CalendarDay;
   pnlLabel?: string;
-  isProfit?: boolean;
+  tone?: "profit" | "loss" | "neutral";
   intensity?: number;
   trades?: number;
   winRate?: number;
+  sessionLabel?: string;
   onClick?: () => void;
 }) {
   const t = useTranslations("dashboard");
   const hasPnl = typeof pnlLabel === "string";
-  const accent = isProfit ? "var(--success)" : "var(--danger)";
+  const accent = tone === "profit" ? "var(--success)" : tone === "loss" ? "var(--danger)" : undefined;
 
   // Tailwind can't statically extract a class name built from a runtime
   // intensity value, so the graded fill/border come from inline styles that
   // mix the success/danger token toward the cell's normal surface color.
-  const style: CSSProperties | undefined = hasPnl
+  // A "neutral" day (net $0 — e.g. still-open positions) has no accent, so it
+  // falls back to the plain surface/border classes below instead of being
+  // tinted green.
+  const style: CSSProperties | undefined = hasPnl && accent
     ? {
         backgroundColor: `color-mix(in srgb, ${accent} ${Math.round(intensity * 100)}%, var(--surface))`,
         borderColor: `color-mix(in srgb, ${accent} 50%, var(--border))`,
@@ -68,14 +73,9 @@ export function DayCell({
         >
           {day.day}
         </span>
-        {typeof winRate === "number" && (
-          <span
-            className={cn(
-              "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-              isProfit ? "bg-success/15 text-success" : "bg-danger/15 text-danger",
-            )}
-          >
-            {winRate}%
+        {sessionLabel && (
+          <span className="whitespace-nowrap rounded-full border border-border bg-background/60 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
+            {sessionLabel}
           </span>
         )}
       </div>

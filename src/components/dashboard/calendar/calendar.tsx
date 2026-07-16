@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { formatPnl } from "@/components/dashboard/format-pnl";
+import { getTradingSession, sessionTranslationKeys } from "@/components/dashboard/trades/trading-session";
 import type { DailyStats } from "@/types/trade";
 import { toLocale } from "./format-date";
 import { CalendarHeader } from "./calendar-header";
@@ -27,6 +28,7 @@ export function Calendar({
   onToday: () => void;
   onDayClick: (date: Date) => void;
 }) {
+  const t = useTranslations("dashboard");
   const locale = toLocale(useLocale());
   const weeks = useMemo(() => buildCalendarWeeks(year, month), [year, month]);
   const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
@@ -60,20 +62,23 @@ export function Calendar({
         {weeks.map((week, weekIndex) =>
           week.map((day) => {
             const stats = day.isCurrentMonth ? dailyStats.get(day.day) : undefined;
+            const tone = stats ? (stats.pnl > 0 ? "profit" : stats.pnl < 0 ? "loss" : "neutral") : undefined;
             const intensity = stats
               ? Math.min(1, Math.max(0.3, Math.abs(stats.pnl) / maxAbsPnl))
               : undefined;
             const winRate = stats ? Math.round((stats.wins / stats.trades) * 100) : undefined;
+            const session = stats ? getTradingSession(new Date(stats.firstTradeDate)) : null;
 
             return (
               <DayCell
                 key={`${weekIndex}-${day.date.toISOString()}`}
                 day={day}
                 pnlLabel={stats ? formatPnl(stats.pnl) : undefined}
-                isProfit={stats ? stats.pnl >= 0 : undefined}
+                tone={tone}
                 intensity={intensity}
                 trades={stats?.trades}
                 winRate={winRate}
+                sessionLabel={session ? t(sessionTranslationKeys[session.name]) : undefined}
                 onClick={day.isCurrentMonth ? () => onDayClick(day.date) : undefined}
               />
             );

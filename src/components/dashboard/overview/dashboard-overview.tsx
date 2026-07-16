@@ -91,7 +91,7 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-6 p-6">
-      <NetPnlCard dailyStats={dailyStats} />
+      <NetPnlCard year={year} month={month} dailyStats={dailyStats} />
       <StatsGrid dailyStats={dailyStats} />
       <Calendar
         year={year}

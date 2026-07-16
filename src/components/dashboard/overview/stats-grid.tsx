@@ -10,6 +10,7 @@ import type { DailyStats } from "@/types/trade";
 export function StatsGrid({ dailyStats }: { dailyStats: Map<number, DailyStats> }) {
   const t = useTranslations("dashboard");
   const summary = useMemo(() => computeMonthSummary(dailyStats), [dailyStats]);
+  const hasTrades = dailyStats.size > 0;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -21,9 +22,11 @@ export function StatsGrid({ dailyStats }: { dailyStats: Map<number, DailyStats> 
       />
       <StatTile
         label={t("worstDay")}
-        value={summary.worstDay !== null ? formatPnl(summary.worstDay.pnl) : t("noTradesYet")}
+        value={
+          summary.worstDay !== null ? formatPnl(summary.worstDay.pnl) : t(hasTrades ? "noLosingDay" : "noTradesYet")
+        }
         secondary={summary.worstDay !== null ? t("dayOfMonth", { day: summary.worstDay.day }) : undefined}
-        tone={summary.worstDay !== null ? (summary.worstDay.pnl >= 0 ? "success" : "danger") : "neutral"}
+        tone={summary.worstDay !== null ? "danger" : "neutral"}
       />
       <StatTile
         label={t("currentStreak")}

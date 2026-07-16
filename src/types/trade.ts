@@ -52,6 +52,9 @@ export interface DailyStats {
   pnl: number;
   trades: number;
   wins: number;
+  // ISO timestamp of the earliest trade opened that day — used to resolve
+  // which trading session badge to show on the calendar day cell.
+  firstTradeDate: string;
 }
 
 export interface MonthSummary {

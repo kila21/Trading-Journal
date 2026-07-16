@@ -1,14 +1,25 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { TrendDownIcon, TrendUpIcon } from "@/components/dashboard/icons";
+import { formatMonthYear, toLocale } from "@/components/dashboard/calendar/format-date";
 import { cn } from "@/lib/utils";
 import type { DailyStats } from "@/types/trade";
 
-export function NetPnlCard({ dailyStats }: { dailyStats: Map<number, DailyStats> }) {
+export function NetPnlCard({
+  year,
+  month,
+  dailyStats,
+}: {
+  year: number;
+  month: number;
+  dailyStats: Map<number, DailyStats>;
+}) {
   const t = useTranslations("dashboard");
+  const locale = toLocale(useLocale());
+  const monthYearLabel = formatMonthYear(new Date(year, month, 1), locale);
 
   let total = 0;
   let trades = 0;
@@ -37,7 +48,9 @@ export function NetPnlCard({ dailyStats }: { dailyStats: Map<number, DailyStats>
           <TrendIcon className="size-6" />
         </div>
         <div>
-          <p className="text-sm text-muted">{t("netPnl")}</p>
+          <p className="text-sm text-muted">
+            {t("netPnl")} <span className="capitalize">· {monthYearLabel}</span>
+          </p>
           <p
             className={cn(
               "mt-0.5 text-3xl font-semibold",

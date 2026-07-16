@@ -7,11 +7,12 @@ export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
 
   for (const trade of trades) {
     const day = new Date(trade.tradeDate).getDate();
-    const existing = stats.get(day) ?? { pnl: 0, trades: 0, wins: 0 };
+    const existing = stats.get(day) ?? { pnl: 0, trades: 0, wins: 0, firstTradeDate: trade.tradeDate };
 
     existing.pnl += trade.pnl;
     existing.trades += 1;
     if (trade.pnl >= 0) existing.wins += 1;
+    if (trade.tradeDate < existing.firstTradeDate) existing.firstTradeDate = trade.tradeDate;
 
     stats.set(day, existing);
   }
@@ -24,7 +25,9 @@ export function computeMonthSummary(dailyStats: Map<number, DailyStats>): MonthS
   let worstDay: MonthSummary["worstDay"] = null;
   for (const [day, stats] of dailyStats) {
     if (!bestDay || stats.pnl > bestDay.pnl) bestDay = { day, pnl: stats.pnl };
-    if (!worstDay || stats.pnl < worstDay.pnl) worstDay = { day, pnl: stats.pnl };
+    // A "worst day" only makes sense as an actual loss — a month with no
+    // losing day shouldn't have its smallest win mislabeled as the worst one.
+    if (stats.pnl < 0 && (!worstDay || stats.pnl < worstDay.pnl)) worstDay = { day, pnl: stats.pnl };
   }
 
   return { bestDay, worstDay, streak: computeStreak(dailyStats) };
