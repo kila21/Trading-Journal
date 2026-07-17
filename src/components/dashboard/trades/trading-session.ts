@@ -39,11 +39,10 @@ function isWithinSession(time: string, session: TradingSession): boolean {
 }
 
 /**
- * Resolves a trade's NY local time-of-day to a trading session. Sessions can
- * overlap (Asian/London, London/NY AM); iterating the config in its
- * already-chronological order and always overwriting the match on a hit
- * means the later-starting session wins. Returns null for the 18:00-20:00
- * NY-time gap, which intentionally has no session.
+ * Resolves a trade's NY local time-of-day to a Kill Zone session. The five
+ * windows are narrow and don't overlap or cover the full day — most trades
+ * fall outside all of them, and this correctly returns null in that case
+ * rather than forcing a nearest-session guess.
  */
 export function getTradingSession(date: Date): TradingSession | null {
   const time = toNyTime(date);

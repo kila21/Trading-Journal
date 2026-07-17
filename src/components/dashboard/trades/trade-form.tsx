@@ -8,10 +8,16 @@ import { Label } from "@/components/ui/label";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleChipGroup } from "@/components/ui/toggle-chip-group";
+import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { formatFullDate, toLocale } from "@/components/dashboard/calendar/format-date";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { ChevronRightIcon, ImageIcon } from "@/components/dashboard/icons";
 import { tradeSymbols } from "@/config/trade-symbols";
+import { tradeSetups } from "@/config/trade-setups";
+import { tradeMistakeTags, type TradeMistakeTag } from "@/config/trade-mistake-tags";
+import { formatRMultiple, formatDuration } from "./trade-stats";
+import { getTradingSession, sessionTranslationKeys } from "./trading-session";
 import { cn } from "@/lib/utils";
 import { TradeImageManager } from "./trade-image-manager";
 import { PendingImageManager } from "./pending-image-manager";
@@ -71,6 +77,67 @@ function hasStopLossWarning(direction: "long" | "short", entryPrice: string, sto
   return direction === "long" ? sl > entry : sl < entry;
 }
 
+/**
+ * Exit time is only meaningful relative to entry time on the same calendar
+ * day (see the exitDate construction in handleSubmit) — a non-blocking
+ * warning, same treatment as the TP/SL warnings above.
+ */
+function hasExitTimeWarning(entryTime: string, exitTime: string): boolean {
+  if (entryTime === "" || exitTime === "") return false;
+  return exitTime < entryTime;
+}
+
+/**
+ * Minutes between two "HH:MM" strings on the same calendar day, for the live
+ * hold-duration readout while the form is still open (before there's a real
+ * TradeDTO to run computeHoldDurationMinutes against). Null when either time
+ * is missing or exit precedes entry — the warning above already covers that
+ * case, this just avoids showing a nonsensical negative duration.
+ */
+function computeLiveHoldMinutes(entryTime: string, exitTime: string): number | null {
+  if (entryTime === "" || exitTime === "") return null;
+  const [entryHours, entryMinutes] = entryTime.split(":").map(Number);
+  const [exitHours, exitMinutes] = exitTime.split(":").map(Number);
+  const minutes = exitHours * 60 + exitMinutes - (entryHours * 60 + entryMinutes);
+  return minutes >= 0 ? minutes : null;
+}
+
+/** Trims trailing zeros (e.g. 10 not 10.00, 2.5 not 2.50). */
+function formatPlanValue(value: number): string {
+  return Number(value.toFixed(2)).toString();
+}
+
+/**
+ * Normalized risk:reward ratio (risk side pinned to 1) — "1:2", "1:3.5" —
+ * rather than the raw price-distance numbers, which can be arbitrarily large
+ * (e.g. "10:300") and don't read as a ratio at a glance.
+ */
+function formatRiskRewardRatio(risk: number, reward: number): string {
+  return `1:${formatPlanValue(reward / risk)}`;
+}
+
+/**
+ * Risk (entry-to-stop distance), reward (entry-to-target distance), and the
+ * resulting planned R, computed live from the plan fields — null unless
+ * entry/stop/target are all valid numbers with a non-zero stop distance.
+ */
+function computeRiskReward(
+  entryPrice: string,
+  stopLoss: string,
+  takeProfit: string,
+): { risk: number; reward: number; plannedR: number } | null {
+  if (entryPrice === "" || stopLoss === "" || takeProfit === "") return null;
+  const entry = Number(entryPrice);
+  const sl = Number(stopLoss);
+  const tp = Number(takeProfit);
+  if (!Number.isFinite(entry) || !Number.isFinite(sl) || !Number.isFinite(tp)) return null;
+
+  const risk = Math.abs(entry - sl);
+  if (risk === 0) return null;
+  const reward = Math.abs(tp - entry);
+  return { risk, reward, plannedR: reward / risk };
+}
+
 function formStateFor(trade: TradeDTO | undefined) {
   if (trade) {
     return {
@@ -80,10 +147,14 @@ function formStateFor(trade: TradeDTO | undefined) {
       exitPrice: String(trade.exitPrice),
       takeProfit: trade.takeProfit === null ? "" : String(trade.takeProfit),
       stopLoss: trade.stopLoss === null ? "" : String(trade.stopLoss),
-      size: String(trade.size),
+      contracts: String(trade.contracts),
       pnl: String(Math.abs(trade.pnl)),
       time: toTimeInputValue(new Date(trade.tradeDate)),
+      exitTime: trade.exitDate ? toTimeInputValue(new Date(trade.exitDate)) : "",
       notes: trade.notes ?? "",
+      setup: trade.setup ?? "",
+      mistakeTags: trade.mistakeTags,
+      followedPlan: trade.followedPlan === true,
     };
   }
 
@@ -94,10 +165,14 @@ function formStateFor(trade: TradeDTO | undefined) {
     exitPrice: "",
     takeProfit: "",
     stopLoss: "",
-    size: "",
+    contracts: "",
     pnl: "",
     time: toTimeInputValue(new Date()),
+    exitTime: "",
     notes: "",
+    setup: "",
+    mistakeTags: [] as TradeMistakeTag[],
+    followedPlan: false,
   };
 }
 
@@ -128,11 +203,23 @@ export function TradeForm({
 
   const takeProfitWarning = hasTakeProfitWarning(form.direction, form.entryPrice, form.takeProfit);
   const stopLossWarning = hasStopLossWarning(form.direction, form.entryPrice, form.stopLoss);
+  const exitTimeWarning = hasExitTimeWarning(form.time, form.exitTime);
 
   const pnlSign = computePnlSign(form.direction, form.entryPrice, form.exitPrice);
   const pnlMagnitude = Number(form.pnl);
   const computedPnl =
     form.pnl !== "" && Number.isFinite(pnlMagnitude) ? pnlSign * Math.abs(pnlMagnitude) : null;
+
+  const riskReward = computeRiskReward(form.entryPrice, form.stopLoss, form.takeProfit);
+  const liveHoldMinutes = computeLiveHoldMinutes(form.time, form.exitTime);
+
+  const liveSession = (() => {
+    if (form.time === "") return null;
+    const [hours, minutes] = form.time.split(":").map(Number);
+    const entryDateTime = new Date(date);
+    entryDateTime.setHours(hours || 0, minutes || 0, 0, 0);
+    return getTradingSession(entryDateTime);
+  })();
 
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -150,6 +237,16 @@ export function TradeForm({
     const tradeDate = new Date(date);
     tradeDate.setHours(hours || 0, minutes || 0, 0, 0);
 
+    // exitTime shares the same calendar day as the entry — cross-day holds
+    // aren't representable yet, tracked as a known limitation.
+    let exitDate: string | null = null;
+    if (form.exitTime !== "") {
+      const [exitHours, exitMinutes] = form.exitTime.split(":").map(Number);
+      const exit = new Date(date);
+      exit.setHours(exitHours || 0, exitMinutes || 0, 0, 0);
+      exitDate = exit.toISOString();
+    }
+
     const payload = {
       symbol: form.symbol,
       direction: form.direction,
@@ -157,10 +254,14 @@ export function TradeForm({
       exitPrice: Number(form.exitPrice),
       takeProfit: form.takeProfit === "" ? null : Number(form.takeProfit),
       stopLoss: form.stopLoss === "" ? null : Number(form.stopLoss),
-      size: Number(form.size),
+      contracts: Number(form.contracts),
       pnl: computePnlSign(form.direction, form.entryPrice, form.exitPrice) * Math.abs(Number(form.pnl)),
       tradeDate: tradeDate.toISOString(),
+      exitDate,
       notes: form.notes,
+      setup: form.setup === "" ? null : form.setup,
+      mistakeTags: form.mistakeTags,
+      followedPlan: form.followedPlan,
     };
 
     const isCreating = !effectiveTrade;
@@ -272,106 +373,180 @@ export function TradeForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="entryPrice">{t("entryPriceLabel")}</Label>
-            <Input
-              id="entryPrice"
-              name="entryPrice"
-              type="number"
-              step="any"
-              required
-              value={form.entryPrice}
-              onChange={handleChange}
-            />
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted">{t("planSectionLabel")}</p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="entryPrice">{t("entryPriceLabel")}</Label>
+              <Input
+                id="entryPrice"
+                name="entryPrice"
+                type="number"
+                step="any"
+                required
+                value={form.entryPrice}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="stopLoss">{t("stopLossLabel")}</Label>
+              <Input
+                id="stopLoss"
+                name="stopLoss"
+                type="number"
+                step="any"
+                value={form.stopLoss}
+                onChange={handleChange}
+              />
+              {stopLossWarning && <p className="text-xs text-warning">{t("stopLossWarning")}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="takeProfit">{t("takeProfitLabel")}</Label>
+              <Input
+                id="takeProfit"
+                name="takeProfit"
+                type="number"
+                step="any"
+                value={form.takeProfit}
+                onChange={handleChange}
+              />
+              {takeProfitWarning && <p className="text-xs text-warning">{t("takeProfitWarning")}</p>}
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="exitPrice">{t("exitPriceLabel")}</Label>
-            <Input
-              id="exitPrice"
-              name="exitPrice"
-              type="number"
-              step="any"
-              required
-              value={form.exitPrice}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="size" className="flex items-center gap-1.5">
-              {t("sizeLabel")}
-              <InfoTooltip text={t("sizeHint")} />
-            </Label>
-            <Input
-              id="size"
-              name="size"
-              type="number"
-              step="any"
-              min="0"
-              required
-              value={form.size}
-              onChange={handleChange}
-            />
+
+          {riskReward && (
+            <div className="flex items-center justify-between rounded-lg bg-primary/15 px-4 py-2.5 text-sm font-medium text-primary">
+              <span>
+                {t("riskRewardLabel")} {formatRiskRewardRatio(riskReward.risk, riskReward.reward)}
+              </span>
+              <span>
+                {t("plannedInlineLabel")} {formatRMultiple(riskReward.plannedR)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted">{t("resultSectionLabel")}</p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="exitPrice">{t("exitPriceLabel")}</Label>
+              <Input
+                id="exitPrice"
+                name="exitPrice"
+                type="number"
+                step="any"
+                value={form.exitPrice}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contracts" className="flex items-center gap-1.5">
+                {t("contractsLabel")}
+                <InfoTooltip text={t("contractsHint")} />
+              </Label>
+              <Input
+                id="contracts"
+                name="contracts"
+                type="number"
+                step="any"
+                min="0"
+                required
+                value={form.contracts}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pnl" className="flex items-center gap-1.5">
+                {t("pnlLabel")}
+                <InfoTooltip text={t("pnlHint")} />
+              </Label>
+              <Input
+                id="pnl"
+                name="pnl"
+                type="number"
+                step="any"
+                min="0"
+                required
+                value={form.pnl}
+                onChange={handleChange}
+                style={{ color: computedPnl === null ? undefined : computedPnl > 0 ? "var(--success)" : computedPnl < 0 ? "var(--danger)" : undefined }}
+                className="font-semibold"
+              />
+              {computedPnl !== null && (
+                <p
+                  className={cn(
+                    "text-xs font-medium",
+                    computedPnl > 0 ? "text-success" : computedPnl < 0 ? "text-danger" : "text-muted",
+                  )}
+                >
+                  {t("calculatedPnl")}: {formatPnl(computedPnl)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="takeProfit">{t("takeProfitLabel")}</Label>
-            <Input
-              id="takeProfit"
-              name="takeProfit"
-              type="number"
-              step="any"
-              value={form.takeProfit}
-              onChange={handleChange}
-            />
-            {takeProfitWarning && <p className="text-xs text-warning">{t("takeProfitWarning")}</p>}
+        <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="time">{t("entryTimeLabel")}</Label>
+              <Input id="time" name="time" type="time" required value={form.time} onChange={handleChange} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="exitTime">{t("exitTimeLabel")}</Label>
+              <Input id="exitTime" name="exitTime" type="time" value={form.exitTime} onChange={handleChange} />
+              {exitTimeWarning && <p className="text-xs text-warning">{t("exitTimeWarning")}</p>}
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="stopLoss">{t("stopLossLabel")}</Label>
-            <Input
-              id="stopLoss"
-              name="stopLoss"
-              type="number"
-              step="any"
-              value={form.stopLoss}
-              onChange={handleChange}
-            />
-            {stopLossWarning && <p className="text-xs text-warning">{t("stopLossWarning")}</p>}
-          </div>
+          {form.time !== "" && (
+            <div className="flex items-center justify-between">
+              {liveSession ? (
+                <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+                  {t(sessionTranslationKeys[liveSession.name])}
+                </span>
+              ) : (
+                <span className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted">
+                  {t("noActiveSession")}
+                </span>
+              )}
+              {liveHoldMinutes !== null && (
+                <span className="text-xs font-medium text-muted">
+                  {t("holdDurationLabel")}: {formatDuration(liveHoldMinutes)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="pnl" className="flex items-center gap-1.5">
-              {t("pnlLabel")}
-              <InfoTooltip text={t("pnlHint")} />
-            </Label>
-            <Input
-              id="pnl"
-              name="pnl"
-              type="number"
-              step="any"
-              min="0"
-              required
-              value={form.pnl}
-              onChange={handleChange}
+        <div className="space-y-4 border-t border-border pt-4">
+          <div className="flex items-end justify-between gap-4">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="setup">{t("setupLabel")}</Label>
+              <Select id="setup" name="setup" value={form.setup} onChange={handleChange}>
+                <option value="">{t("setupNone")}</option>
+                {tradeSetups.map((setup) => (
+                  <option key={setup} value={setup}>
+                    {setup}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <ToggleSwitch
+              checked={form.followedPlan}
+              onChange={(checked) => setForm((prev) => ({ ...prev, followedPlan: checked }))}
+              label={t("followedPlan")}
             />
-            {computedPnl !== null && (
-              <p
-                className={cn(
-                  "text-xs font-medium",
-                  computedPnl > 0 ? "text-success" : computedPnl < 0 ? "text-danger" : "text-muted",
-                )}
-              >
-                {t("calculatedPnl")}: {formatPnl(computedPnl)}
-              </p>
-            )}
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="time">{t("timeLabel")}</Label>
-            <Input id="time" name="time" type="time" required value={form.time} onChange={handleChange} />
+            <Label>{t("mistakeTagsLabel")}</Label>
+            <ToggleChipGroup
+              options={tradeMistakeTags}
+              selected={form.mistakeTags}
+              onChange={(next) => setForm((prev) => ({ ...prev, mistakeTags: next }))}
+              tone="danger"
+            />
           </div>
         </div>
 

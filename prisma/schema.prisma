@@ -93,10 +93,23 @@ model Trade {
   exitPrice  Float
   takeProfit Float?
   stopLoss   Float?
-  size       Float
+  // Number of contracts/units held — not a dollar position size. Combined
+  // with entry/stop price distance to derive dollar risk for R-multiples
+  // (see computeAchievedR in trade-stats.ts).
+  contracts  Float
   pnl        Float
   tradeDate  DateTime
+  // Nullable — only set when the trader records an exit time. Shares the
+  // same calendar day as tradeDate (see trade-form.tsx); used for hold
+  // duration, not as an independent multi-day timestamp.
+  exitDate   DateTime?
   notes      String?
+  // Fixed vocabularies (src/config/trade-setups.ts, trade-mistake-tags.ts),
+  // kept as plain strings/array rather than enums for the same reason as
+  // `direction` above — no migration needed when the list changes.
+  setup        String?
+  mistakeTags  String[] @default([])
+  followedPlan Boolean?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   images     TradeImage[]

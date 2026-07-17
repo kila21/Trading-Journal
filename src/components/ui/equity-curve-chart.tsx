@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 
 // Fixed logical coordinate space — the <svg> scales to its container via
 // `width="100%"` + viewBox, so these are units, not pixels.
-const WIDTH = 640;
-const HEIGHT = 220;
+const WIDTH = 560;
+const HEIGHT = 180;
 const PADDING = { top: 16, right: 12, bottom: 28, left: 44 };
 const INNER_WIDTH = WIDTH - PADDING.left - PADDING.right;
 const INNER_HEIGHT = HEIGHT - PADDING.top - PADDING.bottom;
@@ -45,7 +45,12 @@ function niceTicks(min: number, max: number, tickCount = 4): number[] {
   const niceMin = Math.floor(min / step) * step;
   const niceMax = Math.ceil(max / step) * step;
   const ticks: number[] = [];
-  for (let v = niceMin; v <= niceMax + step * 0.5; v += step) ticks.push(Math.round(v));
+  for (let v = niceMin; v <= niceMax + step * 0.5; v += step) {
+    const rounded = Math.round(v);
+    // A sub-1 step can round two distinct steps down to the same integer —
+    // skip the repeat so gridlines/keys stay unique.
+    if (ticks[ticks.length - 1] !== rounded) ticks.push(rounded);
+  }
   return ticks;
 }
 

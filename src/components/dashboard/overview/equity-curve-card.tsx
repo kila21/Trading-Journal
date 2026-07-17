@@ -13,7 +13,7 @@ export function EquityCurveCard({ trades }: { trades: TradeDTO[] }) {
   const data = useMemo(() => computeEquityCurve(trades), [trades]);
 
   return (
-    <Card>
+    <Card className="mx-auto max-w-xl">
       <h2 className="text-lg font-semibold">{t("equityCurve")}</h2>
       <div className="mt-4">
         <EquityCurveChart

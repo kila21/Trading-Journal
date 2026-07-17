@@ -33,7 +33,11 @@ export async function PATCH(
 
   const trade = await prisma.trade.update({
     where: { id },
-    data: { ...validation.data, tradeDate: new Date(validation.data.tradeDate) },
+    data: {
+      ...validation.data,
+      tradeDate: new Date(validation.data.tradeDate),
+      exitDate: validation.data.exitDate === null ? null : new Date(validation.data.exitDate),
+    },
   });
 
   return NextResponse.json({ trade });

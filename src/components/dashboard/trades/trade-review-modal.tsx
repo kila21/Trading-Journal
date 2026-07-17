@@ -77,7 +77,7 @@ export function TradeReviewModal({
                   )}
                 </div>
                 <p className="mt-1 truncate text-xs text-muted">
-                  {trade.entryPrice} → {trade.exitPrice} · {t("sizeLabel")}: {trade.size}
+                  {trade.entryPrice} → {trade.exitPrice} · {t("contractsLabel")}: {trade.contracts}
                   {trade.takeProfit !== null && ` · ${t("takeProfitLabel")}: ${trade.takeProfit}`}
                   {trade.stopLoss !== null && ` · ${t("stopLossLabel")}: ${trade.stopLoss}`}
                 </p>

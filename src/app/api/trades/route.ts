@@ -11,18 +11,40 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const year = Number(searchParams.get("year"));
-  const month = Number(searchParams.get("month"));
+  const yearParam = searchParams.get("year");
+  const monthParam = searchParams.get("month");
+  const range = searchParams.get("range");
 
-  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
-    return NextResponse.json({ error: "Invalid year or month." }, { status: 400 });
+  const where: { userId: string; tradeDate?: { gte?: Date; lt?: Date } } = { userId: session.user.id };
+
+  if (yearParam !== null && monthParam !== null) {
+    const year = Number(yearParam);
+    const month = Number(monthParam);
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
+      return NextResponse.json({ error: "Invalid year or month." }, { status: 400 });
+    }
+    where.tradeDate = { gte: new Date(year, month, 1), lt: new Date(year, month + 1, 1) };
+  } else if (range === "month" || range === "90d" || range === "ytd" || range === "all") {
+    // Analytics page's range tabs — computed server-side against "now" so the
+    // client never has to duplicate this date math (or get timezone edge
+    // cases wrong doing it independently of the Overview page's month mode).
+    const now = new Date();
+    if (range === "month") {
+      where.tradeDate = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+    } else if (range === "90d") {
+      const from = new Date(now);
+      from.setDate(from.getDate() - 90);
+      where.tradeDate = { gte: from };
+    } else if (range === "ytd") {
+      where.tradeDate = { gte: new Date(now.getFullYear(), 0, 1) };
+    }
+    // "all" leaves where.tradeDate undefined — no lower bound.
+  } else {
+    return NextResponse.json({ error: "Provide year+month or a valid range." }, { status: 400 });
   }
 
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 1);
-
   const trades = await prisma.trade.findMany({
-    where: { userId: session.user.id, tradeDate: { gte: start, lt: end } },
+    where,
     orderBy: { tradeDate: "asc" },
   });
 
@@ -45,6 +67,7 @@ export async function POST(request: Request) {
     data: {
       ...validation.data,
       tradeDate: new Date(validation.data.tradeDate),
+      exitDate: validation.data.exitDate === null ? null : new Date(validation.data.exitDate),
       userId: session.user.id,
     },
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,23 +26,16 @@ export function Dialog({
     dialogRef.current?.showModal();
   }, []);
 
-  function handleBackdropClick(event: MouseEvent<HTMLDialogElement>) {
-    if (event.target === dialogRef.current) {
-      onClose();
-    }
-  }
-
   return (
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      onClick={handleBackdropClick}
       className={cn(
         "m-auto max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-6 text-foreground backdrop:bg-black/60",
         className,
       )}
     >
-      <div onClick={(event) => event.stopPropagation()}>{children}</div>
+      {children}
     </dialog>
   );
 }

@@ -61,8 +61,22 @@ const monthNamesLong: Record<Locale, string[]> = {
   ],
 };
 
+// First 3 characters of the long name — English abbreviations happen to line
+// up exactly this way ("July" -> "Jul"); Georgian has no standard 3-letter
+// month abbreviation, so this is a readable-enough stand-in rather than a
+// linguistically "correct" one.
+const monthNamesShort: Record<Locale, string[]> = {
+  en: monthNamesLong.en.map((name) => name.slice(0, 3)),
+  ka: monthNamesLong.ka.map((name) => name.slice(0, 3)),
+};
+
 export function formatMonthYear(date: Date, locale: Locale): string {
   return `${monthNamesLong[locale][date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** Compact "Mon Day" form (e.g. "Jul 1") — used where full dates are too wide. */
+export function formatShortDate(date: Date, locale: Locale): string {
+  return `${monthNamesShort[locale][date.getMonth()]} ${date.getDate()}`;
 }
 
 export function formatWeekday(date: Date, locale: Locale): string {
