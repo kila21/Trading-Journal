@@ -11,10 +11,15 @@ trading discipline.
 - **Register / log in** with an email and password, and change your password any
   time from the account menu.
 - **Log trades** — symbol, direction, entry/exit price, take profit, stop loss,
-  size, and trading session (Asian, London, NY AM/Lunch/PM) — with P&L calculated
-  automatically.
+  contracts, and trading session (Asian, London, NY AM/Lunch/PM) — with P&L
+  calculated automatically.
 - **See a month at a glance** on a color-coded calendar (green/red by daily P&L),
   with best day, worst day, and current win/loss streak surfaced automatically.
+- **Browse and filter your full trade history** on a dedicated Trades page —
+  search by symbol/notes, filter by setup, session, symbol, direction, mistake
+  tags, plan adherence, and outcome, with live per-option counts.
+- **Track performance on the Analytics page** — win rate and P&L by setup and
+  session, planned-vs-achieved R, discipline/cost-by-mistake, and wins vs losses.
 - **Attach chart screenshots** to a trade, organized per timeframe, so a trade's
   setup and execution stay side by side with the numbers.
 - **Use it in English or Georgian (ქართული)** — every page is fully translated.
@@ -70,6 +75,7 @@ npm run db:migrate
 - [x] Trade log — add/edit/view trades, chart image uploads
 - [x] Dashboard — calendar, P&L stats, best/worst day, streaks
 - [x] Hosted deployment (Netlify + Neon Postgres + Netlify Blobs)
+- [x] Analytics page
+- [x] Trades page — full trade log with search and filters
 - [ ] Brokerage account model
-- [ ] Analytics page
 - [ ] Email verification

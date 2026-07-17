@@ -27,6 +27,19 @@ function toTimeInputValue(date: Date): string {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/** Parses a "YYYY-MM-DD" `<input type="date">` value as a local-midnight Date — never through the UTC-parsing `new Date(string)` constructor, which would shift the day in timezones behind UTC. */
+function parseDateInputValue(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 /**
  * The P&L input only ever takes a magnitude — the sign is derived here, not
  * typed. Long: profit when exit > entry. Short: profit when entry > exit.
@@ -138,7 +151,7 @@ function computeRiskReward(
   return { risk, reward, plannedR: reward / risk };
 }
 
-function formStateFor(trade: TradeDTO | undefined) {
+function formStateFor(trade: TradeDTO | undefined, date: Date) {
   if (trade) {
     return {
       symbol: trade.symbol,
@@ -149,6 +162,7 @@ function formStateFor(trade: TradeDTO | undefined) {
       stopLoss: trade.stopLoss === null ? "" : String(trade.stopLoss),
       contracts: String(trade.contracts),
       pnl: String(Math.abs(trade.pnl)),
+      dateInput: toDateInputValue(new Date(trade.tradeDate)),
       time: toTimeInputValue(new Date(trade.tradeDate)),
       exitTime: trade.exitDate ? toTimeInputValue(new Date(trade.exitDate)) : "",
       notes: trade.notes ?? "",
@@ -167,6 +181,7 @@ function formStateFor(trade: TradeDTO | undefined) {
     stopLoss: "",
     contracts: "",
     pnl: "",
+    dateInput: toDateInputValue(date),
     time: toTimeInputValue(new Date()),
     exitTime: "",
     notes: "",
@@ -189,7 +204,7 @@ export function TradeForm({
 }) {
   const t = useTranslations("dashboard");
   const locale = toLocale(useLocale());
-  const [form, setForm] = useState(() => formStateFor(trade));
+  const [form, setForm] = useState(() => formStateFor(trade, date));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdTrade, setCreatedTrade] = useState<TradeDTO | undefined>(undefined);
@@ -214,9 +229,9 @@ export function TradeForm({
   const liveHoldMinutes = computeLiveHoldMinutes(form.time, form.exitTime);
 
   const liveSession = (() => {
-    if (form.time === "") return null;
+    if (form.time === "" || form.dateInput === "") return null;
     const [hours, minutes] = form.time.split(":").map(Number);
-    const entryDateTime = new Date(date);
+    const entryDateTime = parseDateInputValue(form.dateInput);
     entryDateTime.setHours(hours || 0, minutes || 0, 0, 0);
     return getTradingSession(entryDateTime);
   })();
@@ -234,7 +249,7 @@ export function TradeForm({
     setPending(true);
 
     const [hours, minutes] = form.time.split(":").map(Number);
-    const tradeDate = new Date(date);
+    const tradeDate = parseDateInputValue(form.dateInput);
     tradeDate.setHours(hours || 0, minutes || 0, 0, 0);
 
     // exitTime shares the same calendar day as the entry — cross-day holds
@@ -242,7 +257,7 @@ export function TradeForm({
     let exitDate: string | null = null;
     if (form.exitTime !== "") {
       const [exitHours, exitMinutes] = form.exitTime.split(":").map(Number);
-      const exit = new Date(date);
+      const exit = parseDateInputValue(form.dateInput);
       exit.setHours(exitHours || 0, exitMinutes || 0, 0, 0);
       exitDate = exit.toISOString();
     }
@@ -343,7 +358,9 @@ export function TradeForm({
   return (
     <>
       <h2 className="text-lg font-semibold">{effectiveTrade ? t("editTrade") : t("newTrade")}</h2>
-      <p className="mt-1 text-sm text-muted">{formatFullDate(date, locale)}</p>
+      <p className="mt-1 text-sm text-muted">
+        {formatFullDate(form.dateInput === "" ? date : parseDateInputValue(form.dateInput), locale)}
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-left">
         <div className="grid grid-cols-2 gap-4">
@@ -488,7 +505,18 @@ export function TradeForm({
         </div>
 
         <div className="space-y-1.5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="dateInput">{t("tradeDateLabel")}</Label>
+              <Input
+                id="dateInput"
+                name="dateInput"
+                type="date"
+                required
+                value={form.dateInput}
+                onChange={handleChange}
+              />
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="time">{t("entryTimeLabel")}</Label>
               <Input id="time" name="time" type="time" required value={form.time} onChange={handleChange} />

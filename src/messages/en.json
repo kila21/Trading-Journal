@@ -335,9 +335,27 @@
     "largestWin": "Largest win",
     "winLossRatio": "Win / loss ratio",
     "winLossRatioSecondary": "avg win ÷ avg loss",
+    "tradeDateLabel": "Date",
+    "tradesTitle": "Trades",
+    "tradesMetaDescription": "Browse, search, and filter every trade you've logged.",
+    "searchPlaceholder": "Search symbol or notes…",
+    "filterSearchPlaceholder": "Search…",
+    "clearAllFilters": "Clear all",
+    "filterOutcome": "Outcome",
+    "outcomeWin": "Win",
+    "outcomeLoss": "Loss",
+    "followedPlanAny": "Any",
+    "noSetupTagged": "No setup tagged",
+    "tableDate": "Date",
+    "tableSymbol": "Symbol",
+    "tableR": "R",
+    "tablePnl": "P&L",
+    "tradesEmptyTitle": "No trades match these filters",
+    "clearFilterCount": "{label}: show {count}",
     "nav": {
       "dashboard": "Dashboard",
-      "analytics": "Analytics"
+      "analytics": "Analytics",
+      "trades": "Trades"
     }
   }
 }

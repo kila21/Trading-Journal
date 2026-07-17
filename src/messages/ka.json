@@ -335,9 +335,27 @@
     "largestWin": "უდიდესი მოგება",
     "winLossRatio": "მოგება/წაგება",
     "winLossRatioSecondary": "საშ. მოგება ÷ საშ. წაგება",
+    "tradeDateLabel": "თარიღი",
+    "tradesTitle": "პოზიციები",
+    "tradesMetaDescription": "დაათვალიერეთ, მოძებნეთ და გაფილტრეთ ყველა დამატებული პოზიცია.",
+    "searchPlaceholder": "მოძებნეთ სიმბოლო ან შენიშვნა…",
+    "filterSearchPlaceholder": "ძებნა…",
+    "clearAllFilters": "ყველას გასუფთავება",
+    "filterOutcome": "შედეგი",
+    "outcomeWin": "მოგება",
+    "outcomeLoss": "წაგება",
+    "followedPlanAny": "ყველა",
+    "noSetupTagged": "სეტაპის გარეშე",
+    "tableDate": "თარიღი",
+    "tableSymbol": "სიმბოლო",
+    "tableR": "R",
+    "tablePnl": "P&L",
+    "tradesEmptyTitle": "ამ ფილტრებით პოზიცია ვერ მოიძებნა",
+    "clearFilterCount": "{label}: აჩვენე {count}",
     "nav": {
       "dashboard": "დეშბორდი",
-      "analytics": "ანალიტიკა"
+      "analytics": "ანალიტიკა",
+      "trades": "პოზიციები"
     }
   }
 }
