@@ -5,7 +5,6 @@
 import { getTradingSession } from "./trading-session";
 import { computeAchievedR } from "./trade-stats";
 import type { TradeDTO } from "@/types/trade";
-import type { TradeSetup } from "@/config/trade-setups";
 import type { TradeMistakeTag } from "@/config/trade-mistake-tags";
 import type { SessionName } from "@/types/trading-session";
 
@@ -16,7 +15,7 @@ export type TradeSortDirection = "asc" | "desc";
 export interface TradeFilters {
   symbols: string[];
   directions: ("long" | "short")[];
-  setups: TradeSetup[];
+  setups: string[];
   includeNoSetup: boolean;
   sessions: SessionName[];
   includeNoSession: boolean;
@@ -95,7 +94,7 @@ export function applyTradeFilters(trades: TradeDTO[], filters: TradeFilters): Tr
 export interface FilterOptionCounts {
   symbols: Map<string, number>;
   directions: Record<"long" | "short", number>;
-  setups: Map<TradeSetup, number>;
+  setups: Map<string, number>;
   noSetupCount: number;
   sessions: Map<SessionName, number>;
   noSessionCount: number;

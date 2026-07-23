@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleChipGroup } from "@/components/ui/toggle-chip-group";
 import { SearchableMultiSelectPopover, type MultiSelectOption } from "@/components/ui/searchable-multi-select-popover";
 import { SearchIcon, XIcon } from "@/components/dashboard/icons";
-import { tradeSetups, type TradeSetup } from "@/config/trade-setups";
+import { useSetups } from "@/components/dashboard/playbook/use-setups";
 import { tradeMistakeTags, type TradeMistakeTag } from "@/config/trade-mistake-tags";
 import { tradingSessions } from "@/config/trade-sessions";
 import { sessionTranslationKeys } from "./trading-session";
@@ -44,6 +44,7 @@ export function TradesFilterBar({
   onAddTrade: () => void;
 }) {
   const t = useTranslations("dashboard");
+  const { setups } = useSetups();
   const counts = useMemo(() => computeFilterOptionCounts(trades, filters), [trades, filters]);
 
   const symbolOptions: MultiSelectOption<string>[] = useMemo(() => {
@@ -51,10 +52,10 @@ export function TradesFilterBar({
     return symbols.map((symbol) => ({ value: symbol, label: symbol, count: counts.symbols.get(symbol) ?? 0 }));
   }, [trades, counts.symbols]);
 
-  const setupOptions: MultiSelectOption<TradeSetup>[] = tradeSetups.map((setup) => ({
-    value: setup,
-    label: setup,
-    count: counts.setups.get(setup) ?? 0,
+  const setupOptions: MultiSelectOption<string>[] = setups.map((setup) => ({
+    value: setup.name,
+    label: setup.name,
+    count: counts.setups.get(setup.name) ?? 0,
   }));
 
   const sessionOptions: MultiSelectOption<SessionName>[] = sessionNames.map((name) => ({

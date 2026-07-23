@@ -1,5 +1,4 @@
 import type { TradeTimeframe } from "@/config/trade-timeframes";
-import type { TradeSetup } from "@/config/trade-setups";
 import type { TradeMistakeTag } from "@/config/trade-mistake-tags";
 import type { SessionName } from "@/types/trading-session";
 
@@ -18,9 +17,10 @@ export interface TradeDTO {
   tradeDate: string;
   exitDate: string | null;
   notes: string | null;
-  setup: TradeSetup | null;
+  setup: string | null;
   mistakeTags: TradeMistakeTag[];
   followedPlan: boolean | null;
+  checkedConditions: string[];
 }
 
 // Server-side validated shape for creating/updating a trade (same fields as
@@ -37,9 +37,10 @@ export interface TradeInput {
   tradeDate: string;
   exitDate: string | null;
   notes: string | null;
-  setup: TradeSetup | null;
+  setup: string | null;
   mistakeTags: TradeMistakeTag[];
   followedPlan: boolean | null;
+  checkedConditions: string[];
 }
 
 export interface TradeImageDTO {
@@ -84,7 +85,7 @@ export interface EquityPoint {
 
 // Per-setup row on the Analytics page's setup breakdown table.
 export interface SetupBreakdownRow {
-  setup: TradeSetup;
+  setup: string;
   trades: number;
   wins: number;
   winRate: number; // 0..1

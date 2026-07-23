@@ -27,6 +27,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   trades        Trade[]
+  setups        Setup[]
 
   @@unique([email])
   @@map("user")
@@ -110,12 +111,43 @@ model Trade {
   setup        String?
   mistakeTags  String[] @default([])
   followedPlan Boolean?
+  // Snapshot of the exact Setup.conditions text strings checked at save
+  // time — not a live link to condition IDs, so it survives the setup's
+  // conditions being edited/reordered/deleted later without corrupting
+  // trade history ("saved as taken", not re-derived).
+  checkedConditions String[] @default([])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   images     TradeImage[]
 
   @@index([userId, tradeDate])
   @@map("trade")
+}
+
+// The trader's playbook. status/sessions/instruments are plain
+// strings/arrays (validated in src/lib/validate-setup.ts), same non-enum
+// rationale as Trade.direction/setup above. Trade.setup soft-references
+// this by name (no FK) — deliberately, so a trade's history survives a
+// setup being renamed or retired.
+model Setup {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  status      String   @default("active")
+  conditions  String[] @default([])
+  stopRule    String?
+  targetRule  String?
+  minR        Float?
+  sessions    String[] @default([])
+  instruments String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("setup")
 }
 
 model TradeImage {

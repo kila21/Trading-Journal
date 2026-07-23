@@ -1,5 +1,4 @@
 // Hand-rolled server-side validation for trade create/update payloads.
-import { tradeSetups, type TradeSetup } from "@/config/trade-setups";
 import { tradeMistakeTags, type TradeMistakeTag } from "@/config/trade-mistake-tags";
 import type { TradeInput } from "@/types/trade";
 
@@ -35,6 +34,7 @@ export function validateTradeInput(body: unknown): ValidationResult {
     setup,
     mistakeTags,
     followedPlan,
+    checkedConditions,
   } = body as Record<string, unknown>;
 
   if (typeof symbol !== "string" || symbol.trim().length === 0) {
@@ -76,7 +76,12 @@ export function validateTradeInput(body: unknown): ValidationResult {
       return { ok: false, error: "Exit date is invalid." };
     }
   }
-  if (setup !== undefined && setup !== null && !tradeSetups.includes(setup as TradeSetup)) {
+  // Not validated against a fixed vocabulary or a real Setup row on
+  // purpose — setup is a soft reference by name (see prisma/schema.prisma),
+  // and a hard existence check here would break editing any trade whose
+  // setup doesn't match a current Setup row (e.g. one from before the
+  // Playbook existed, or one whose Setup was since renamed/deleted).
+  if (setup !== undefined && setup !== null && typeof setup !== "string") {
     return { ok: false, error: "Invalid setup." };
   }
   if (mistakeTags !== undefined && mistakeTags !== null) {
@@ -89,6 +94,14 @@ export function validateTradeInput(body: unknown): ValidationResult {
   }
   if (followedPlan !== undefined && followedPlan !== null && typeof followedPlan !== "boolean") {
     return { ok: false, error: "Followed plan must be true, false, or unset." };
+  }
+  // Snapshot of the setup's condition text the trader checked at save time
+  // — never validated against the setup's *current* conditions, since it
+  // must stay a valid historical record even after the setup changes later.
+  if (checkedConditions !== undefined && checkedConditions !== null) {
+    if (!Array.isArray(checkedConditions) || !checkedConditions.every((condition) => typeof condition === "string")) {
+      return { ok: false, error: "Invalid checked conditions." };
+    }
   }
 
   return {
@@ -105,9 +118,12 @@ export function validateTradeInput(body: unknown): ValidationResult {
       tradeDate,
       exitDate: typeof exitDate === "string" ? exitDate : null,
       notes: typeof notes === "string" && notes.trim().length > 0 ? notes.trim() : null,
-      setup: setup === undefined ? null : (setup as TradeSetup | null),
+      setup: setup === undefined ? null : (setup as string | null),
       mistakeTags: Array.isArray(mistakeTags) ? (Array.from(new Set(mistakeTags)) as TradeMistakeTag[]) : [],
       followedPlan: followedPlan === undefined ? null : (followedPlan as boolean | null),
+      checkedConditions: Array.isArray(checkedConditions)
+        ? checkedConditions.map((condition) => (condition as string).trim()).filter((condition) => condition.length > 0)
+        : [],
     },
   };
 }

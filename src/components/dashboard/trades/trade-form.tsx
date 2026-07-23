@@ -14,8 +14,8 @@ import { formatFullDate, toLocale } from "@/components/dashboard/calendar/format
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { ChevronRightIcon, ImageIcon } from "@/components/dashboard/icons";
 import { tradeSymbols } from "@/config/trade-symbols";
-import { tradeSetups } from "@/config/trade-setups";
 import { tradeMistakeTags, type TradeMistakeTag } from "@/config/trade-mistake-tags";
+import { useSetups } from "@/components/dashboard/playbook/use-setups";
 import { formatRMultiple, formatDuration } from "./trade-stats";
 import { getTradingSession, sessionTranslationKeys } from "./trading-session";
 import { cn } from "@/lib/utils";
@@ -169,6 +169,7 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
       setup: trade.setup ?? "",
       mistakeTags: trade.mistakeTags,
       followedPlan: trade.followedPlan === true,
+      checkedConditions: trade.checkedConditions,
     };
   }
 
@@ -188,6 +189,7 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
     setup: "",
     mistakeTags: [] as TradeMistakeTag[],
     followedPlan: false,
+    checkedConditions: [] as string[],
   };
 }
 
@@ -204,6 +206,7 @@ export function TradeForm({
 }) {
   const t = useTranslations("dashboard");
   const locale = toLocale(useLocale());
+  const { setups } = useSetups();
   const [form, setForm] = useState(() => formStateFor(trade, date));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -227,6 +230,9 @@ export function TradeForm({
 
   const riskReward = computeRiskReward(form.entryPrice, form.stopLoss, form.takeProfit);
   const liveHoldMinutes = computeLiveHoldMinutes(form.time, form.exitTime);
+  const selectedSetup = setups.find((s) => s.name === form.setup) ?? null;
+  const belowMinRWarning =
+    selectedSetup?.minR != null && riskReward !== null && riskReward.plannedR < selectedSetup.minR;
 
   const liveSession = (() => {
     if (form.time === "" || form.dateInput === "") return null;
@@ -241,6 +247,23 @@ export function TradeForm({
   ) {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  // Checked conditions are specific to whichever setup they were checked
+  // against — carrying them over to a newly-picked setup would misrepresent
+  // what was actually observed, so a setup change always clears them.
+  function handleSetupChange(event: ChangeEvent<HTMLSelectElement>) {
+    const value = event.target.value;
+    setForm((prev) => ({ ...prev, setup: value, checkedConditions: [] }));
+  }
+
+  function toggleCondition(condition: string, checked: boolean) {
+    setForm((prev) => ({
+      ...prev,
+      checkedConditions: checked
+        ? [...prev.checkedConditions, condition]
+        : prev.checkedConditions.filter((value) => value !== condition),
+    }));
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -277,6 +300,7 @@ export function TradeForm({
       setup: form.setup === "" ? null : form.setup,
       mistakeTags: form.mistakeTags,
       followedPlan: form.followedPlan,
+      checkedConditions: form.checkedConditions,
     };
 
     const isCreating = !effectiveTrade;
@@ -432,13 +456,23 @@ export function TradeForm({
           </div>
 
           {riskReward && (
-            <div className="flex items-center justify-between rounded-lg bg-primary/15 px-4 py-2.5 text-sm font-medium text-primary">
-              <span>
-                {t("riskRewardLabel")} {formatRiskRewardRatio(riskReward.risk, riskReward.reward)}
-              </span>
-              <span>
-                {t("plannedInlineLabel")} {formatRMultiple(riskReward.plannedR)}
-              </span>
+            <div className="rounded-lg bg-primary/15 px-4 py-2.5 text-sm font-medium text-primary">
+              <div className="flex items-center justify-between">
+                <span>
+                  {t("riskRewardLabel")} {formatRiskRewardRatio(riskReward.risk, riskReward.reward)}
+                </span>
+                <span>
+                  {t("plannedInlineLabel")} {formatRMultiple(riskReward.plannedR)}
+                </span>
+              </div>
+              {belowMinRWarning && (
+                <p className="mt-1 text-xs font-medium text-warning">
+                  {t("belowMinRWarning", {
+                    planned: formatRMultiple(riskReward.plannedR),
+                    min: formatRMultiple(selectedSetup!.minR!),
+                  })}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -551,11 +585,11 @@ export function TradeForm({
           <div className="flex items-end justify-between gap-4">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="setup">{t("setupLabel")}</Label>
-              <Select id="setup" name="setup" value={form.setup} onChange={handleChange}>
+              <Select id="setup" name="setup" value={form.setup} onChange={handleSetupChange}>
                 <option value="">{t("setupNone")}</option>
-                {tradeSetups.map((setup) => (
-                  <option key={setup} value={setup}>
-                    {setup}
+                {setups.map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.name}
                   </option>
                 ))}
               </Select>
@@ -566,6 +600,33 @@ export function TradeForm({
               label={t("followedPlan")}
             />
           </div>
+
+          {selectedSetup && selectedSetup.conditions.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label>{t("conditionsYouSawLabel")}</Label>
+                <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted">
+                  {t("conditionsCounter", {
+                    checked: form.checkedConditions.length,
+                    total: selectedSetup.conditions.length,
+                  })}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {selectedSetup.conditions.map((condition) => (
+                  <label key={condition} className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={form.checkedConditions.includes(condition)}
+                      onChange={(event) => toggleCondition(condition, event.target.checked)}
+                      className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
+                    />
+                    {condition}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>{t("mistakeTagsLabel")}</Label>
