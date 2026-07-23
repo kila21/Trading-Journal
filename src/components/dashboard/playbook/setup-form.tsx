@@ -143,10 +143,15 @@ export function SetupForm({
   setup,
   onClose,
   onSaved,
+  onDeleted,
 }: {
   setup?: SetupDTO;
   onClose: () => void;
   onSaved: () => void;
+  // Falls back to onSaved when omitted (plain list-refetch is correct there)
+  // — the detail page passes its own to navigate away instead of refetching
+  // into a "setup not found" state.
+  onDeleted?: () => void;
 }) {
   const t = useTranslations("dashboard");
   const [form, setForm] = useState(() => formStateFor(setup));
@@ -212,7 +217,7 @@ export function SetupForm({
       return;
     }
 
-    onSaved();
+    (onDeleted ?? onSaved)();
     onClose();
   }
 

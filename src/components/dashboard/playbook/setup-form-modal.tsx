@@ -8,14 +8,16 @@ export function SetupFormModal({
   setup,
   onClose,
   onSaved,
+  onDeleted,
 }: {
   setup?: SetupDTO;
   onClose: () => void;
   onSaved: () => void;
+  onDeleted?: () => void;
 }) {
   return (
     <Dialog onClose={onClose} className="max-w-2xl">
-      <SetupForm setup={setup} onClose={onClose} onSaved={onSaved} />
+      <SetupForm setup={setup} onClose={onClose} onSaved={onSaved} onDeleted={onDeleted} />
     </Dialog>
   );
 }

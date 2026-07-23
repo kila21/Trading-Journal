@@ -6,19 +6,20 @@ import { sessionTranslationKeys } from "@/components/dashboard/trades/trading-se
 import type { SetupDTO } from "@/types/setup";
 import type { SessionName } from "@/types/trading-session";
 
-const statusToneClass: Record<SetupDTO["status"], string> = {
+export const statusToneClass: Record<SetupDTO["status"], string> = {
   active: "border-success/30 bg-success/15 text-success",
   testing: "border-warning/30 bg-warning/15 text-warning",
   retired: "border-border bg-background/60 text-muted",
 };
 
+export const statusLabelKey: Record<SetupDTO["status"], string> = {
+  active: "setupStatusActive",
+  testing: "setupStatusTesting",
+  retired: "setupStatusRetired",
+};
+
 export function SetupCard({ setup, onClick }: { setup: SetupDTO; onClick: () => void }) {
   const t = useTranslations("dashboard");
-  const statusLabelKey: Record<SetupDTO["status"], string> = {
-    active: "setupStatusActive",
-    testing: "setupStatusTesting",
-    retired: "setupStatusRetired",
-  };
 
   return (
     <button
