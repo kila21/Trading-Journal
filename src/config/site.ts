@@ -4,10 +4,10 @@ export const navLinks = [
 ] as const;
 
 export const socialLinks = [
-  { key: "github", href: "https://github.com/" },
-  { key: "instagram", href: "https://instagram.com/" },
-  { key: "linkedin", href: "https://linkedin.com/" },
-  { key: "facebook", href: "https://facebook.com/" },
+  { key: "github", href: "https://github.com/kila21" },
+  { key: "instagram", href: "https://www.instagram.com/killlllllllllaa/" },
+  { key: "linkedin", href: "https://www.linkedin.com/in/luka-kilasonia-937a9a211/" },
+  { key: "facebook", href: "https://www.facebook.com/killlllllllllla/" },
 ] as const;
 
 export const footerLinks = [
