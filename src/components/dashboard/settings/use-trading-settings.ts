@@ -1,40 +1,39 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { TradeDTO } from "@/types/trade";
+import type { TradingSettingsDTO } from "@/types/trading-settings";
 
-export function useMonthTrades(year: number, month: number) {
-  const [trades, setTrades] = useState<TradeDTO[]>([]);
-  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+/** Fetches the current user's trading settings. Mirrors use-setups.ts. */
+export function useTradingSettings() {
+  const [settings, setSettings] = useState<TradingSettingsDTO | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const key = `${year}-${month}-${refreshKey}`;
 
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`/api/trades?year=${year}&month=${month}`)
+    fetch("/api/trading-settings")
       .then((response) => response.json().then((body) => ({ ok: response.ok, body })))
       .then(({ ok, body }) => {
         if (cancelled) return;
-        setTrades(ok ? (body.trades as TradeDTO[]) : []);
+        setSettings(ok ? (body.settings as TradingSettingsDTO | null) : null);
         setError(!ok);
-        setLoadedKey(key);
+        setLoaded(true);
       })
       .catch(() => {
         if (cancelled) return;
-        setTrades([]);
+        setSettings(null);
         setError(true);
-        setLoadedKey(key);
+        setLoaded(true);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [key, year, month]);
+  }, [refreshKey]);
 
   const refetch = useCallback(() => setRefreshKey((prev) => prev + 1), []);
 
-  return { trades, isLoading: loadedKey !== key, error, refetch };
+  return { settings, isLoading: !loaded, error, refetch };
 }

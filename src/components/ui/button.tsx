@@ -1,13 +1,14 @@
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-export type ButtonVariant = "primary" | "outline" | "ghost";
+export type ButtonVariant = "primary" | "outline" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: "bg-primary text-primary-foreground hover:opacity-90",
   outline: "border border-border text-foreground hover:bg-surface",
   ghost: "text-foreground hover:bg-surface",
+  danger: "bg-danger text-white hover:opacity-90",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

@@ -35,6 +35,8 @@ export function validateTradeInput(body: unknown): ValidationResult {
     mistakeTags,
     followedPlan,
     checkedConditions,
+    commission,
+    riskAmount,
   } = body as Record<string, unknown>;
 
   if (typeof symbol !== "string" || symbol.trim().length === 0) {
@@ -57,6 +59,15 @@ export function validateTradeInput(body: unknown): ValidationResult {
   const stopLossResult = parseOptionalNumber(stopLoss);
   if (!stopLossResult.ok) {
     return { ok: false, error: "Stop loss must be a number." };
+  }
+
+  const commissionResult = parseOptionalNumber(commission);
+  if (!commissionResult.ok || (commissionResult.value !== null && commissionResult.value < 0)) {
+    return { ok: false, error: "Commission must be a non-negative number." };
+  }
+  const riskAmountResult = parseOptionalNumber(riskAmount);
+  if (!riskAmountResult.ok || (riskAmountResult.value !== null && riskAmountResult.value < 0)) {
+    return { ok: false, error: "Risk amount must be a non-negative number." };
   }
 
   if (typeof contracts !== "number" || !Number.isFinite(contracts) || contracts <= 0) {
@@ -124,6 +135,8 @@ export function validateTradeInput(body: unknown): ValidationResult {
       checkedConditions: Array.isArray(checkedConditions)
         ? checkedConditions.map((condition) => (condition as string).trim()).filter((condition) => condition.length > 0)
         : [],
+      commission: commissionResult.value,
+      riskAmount: riskAmountResult.value,
     },
   };
 }

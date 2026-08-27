@@ -31,7 +31,7 @@ export function Dialog({
       ref={dialogRef}
       onClose={onClose}
       className={cn(
-        "m-auto max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-6 text-foreground backdrop:bg-black/60",
+        "m-auto max-h-[85vh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface p-4 text-foreground backdrop:bg-black/60 sm:p-6",
         className,
       )}
     >

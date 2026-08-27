@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
 import { formatShortDate, toLocale } from "@/components/dashboard/calendar/format-date";
 import { formatPnl } from "@/components/dashboard/format-pnl";
@@ -9,6 +11,11 @@ import { getTradingSession, sessionTranslationKeys } from "./trading-session";
 import { computeAchievedR, formatRMultiple } from "./trade-stats";
 import type { TradeSortField, TradeSortDirection, TradesSummary } from "./trade-filters";
 import type { TradeDTO } from "@/types/trade";
+
+// A row is a single line of text in each cell, so this only needs to be a
+// close estimate — the virtualizer doesn't require pixel-perfect accuracy,
+// just something close enough that the scrollbar doesn't jump around.
+const ESTIMATED_ROW_HEIGHT = 49;
 
 function formatTableDate(date: Date, locale: "en" | "ka"): string {
   return `${formatShortDate(date, locale)}, ${date.getFullYear()}`;
@@ -31,7 +38,10 @@ function SortableHeader({
 }) {
   const isActive = sortField === field;
   return (
-    <th className={cn("px-4 py-3 font-medium text-muted", align === "right" ? "text-right" : "text-left")}>
+    <th
+      aria-sort={isActive ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+      className={cn("px-4 py-3 font-medium text-muted", align === "right" ? "text-right" : "text-left")}
+    >
       <button
         type="button"
         onClick={() => onSort(field)}
@@ -71,11 +81,30 @@ export function TradesTable({
 }) {
   const t = useTranslations("dashboard");
   const locale = toLocale(useLocale());
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Only the trades already fetched (client-side range/filter, unchanged)
+  // are windowed here — this is purely a rendering-cost optimization so a
+  // long trade history doesn't mount hundreds of rows at once.
+  const virtualizer = useVirtualizer({
+    count: trades.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: 8,
+  });
+
+  const virtualRows = virtualizer.getVirtualItems();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
+  const paddingBottom =
+    virtualRows.length > 0 ? virtualizer.getTotalSize() - virtualRows[virtualRows.length - 1].end : 0;
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+    <div
+      ref={scrollRef}
+      className="max-h-[70vh] overflow-auto rounded-2xl border border-border bg-surface"
+    >
       <table className="w-full min-w-[720px] text-sm">
-        <thead className="border-b border-border">
+        <thead className="sticky top-0 z-10 border-b border-border bg-surface">
           <tr>
             <SortableHeader
               field="tradeDate"
@@ -106,7 +135,13 @@ export function TradesTable({
           </tr>
         </thead>
         <tbody>
-          {trades.map((trade) => {
+          {paddingTop > 0 && (
+            <tr aria-hidden="true">
+              <td colSpan={6} style={{ height: paddingTop }} />
+            </tr>
+          )}
+          {virtualRows.map((virtualRow) => {
+            const trade = trades[virtualRow.index];
             const session = getTradingSession(new Date(trade.tradeDate));
             const achievedR = computeAchievedR(trade);
             const isProfit = trade.pnl >= 0;
@@ -157,6 +192,11 @@ export function TradesTable({
               </tr>
             );
           })}
+          {paddingBottom > 0 && (
+            <tr aria-hidden="true">
+              <td colSpan={6} style={{ height: paddingBottom }} />
+            </tr>
+          )}
         </tbody>
         <tfoot className="border-t border-border bg-background/30">
           <tr>

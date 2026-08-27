@@ -24,10 +24,11 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  trades        Trade[]
-  setups        Setup[]
+  sessions        Session[]
+  accounts        Account[]
+  trades          Trade[]
+  setups          Setup[]
+  tradingSettings TradingSettings?
 
   @@unique([email])
   @@map("user")
@@ -116,6 +117,15 @@ model Trade {
   // conditions being edited/reordered/deleted later without corrupting
   // trade history ("saved as taken", not re-derived).
   checkedConditions String[] @default([])
+  // Optional fee/commission for this trade, in dollars — tracked separately
+  // from `pnl` (which stays exactly as manually entered) so it can feed a
+  // "net after fees" figure without changing the meaning of existing trades.
+  commission Float?
+  // Optional dollar amount the trader considers "at risk" on this trade,
+  // manually entered like `pnl` — a price-distance-based calculation isn't
+  // reliable across instruments without a per-instrument point-value, which
+  // isn't modeled here (see computeAchievedR's comment in trade-stats.ts).
+  riskAmount Float?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   images     TradeImage[]
@@ -148,6 +158,20 @@ model Setup {
   @@unique([userId, name])
   @@index([userId])
   @@map("setup")
+}
+
+// Per-user singleton for trading-related preferences that aren't tied to a
+// single trade or setup. Deliberately not named `Account` — Better Auth
+// already defines a model with that name (OAuth/credential accounts, see the
+// `Account` model above), so this would collide.
+model TradingSettings {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountBalance Float?
+  updatedAt      DateTime @updatedAt
+
+  @@map("trading_settings")
 }
 
 model TradeImage {

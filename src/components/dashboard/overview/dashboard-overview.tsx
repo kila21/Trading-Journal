@@ -1,16 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { NetPnlCard } from "@/components/dashboard/overview/net-pnl-card";
 import { StatsGrid } from "@/components/dashboard/overview/stats-grid";
 import { EquityCurveCard } from "@/components/dashboard/overview/equity-curve-card";
 import { ViewToggle, type OverviewView } from "@/components/dashboard/overview/view-toggle";
+import { DashboardOverviewSkeleton } from "@/components/dashboard/overview/dashboard-overview-skeleton";
 import { Calendar } from "@/components/dashboard/calendar/calendar";
 import { useMonthTrades } from "@/components/dashboard/trades/use-month-trades";
 import { groupTradesByDay } from "@/components/dashboard/trades/trade-stats";
 import { TradeReviewModal } from "@/components/dashboard/trades/trade-review-modal";
 import { TradeFormModal } from "@/components/dashboard/trades/trade-form-modal";
 import { TradeDetailModal } from "@/components/dashboard/trades/trade-detail-modal";
+import { ErrorState } from "@/components/ui/error-state";
 import type { TradeDTO } from "@/types/trade";
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -22,11 +25,18 @@ function isSameDay(a: Date, b: Date): boolean {
 }
 
 export function DashboardOverview() {
+  const t = useTranslations("dashboard");
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
 
-  const { trades, refetch } = useMonthTrades(year, month);
+  const { trades, isLoading, error, refetch } = useMonthTrades(year, month);
+  // Derived without an effect (React's documented pattern for "remember this
+  // was true at least once") so a month change never re-shows the full-page
+  // skeleton — only the very first load does.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  if (!isLoading && !hasLoadedOnce) setHasLoadedOnce(true);
+
   const dailyStats = useMemo(() => groupTradesByDay(trades), [trades]);
   const [activeView, setActiveView] = useState<OverviewView>("calendar");
 
@@ -91,6 +101,22 @@ export function DashboardOverview() {
   const selectedDayTrades = selectedDate
     ? trades.filter((trade) => isSameDay(new Date(trade.tradeDate), selectedDate))
     : [];
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorState message={t("loadError")} retryLabel={t("retry")} onRetry={refetch} />
+      </div>
+    );
+  }
+
+  if (!hasLoadedOnce && isLoading) {
+    return (
+      <div className="p-6">
+        <DashboardOverviewSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">

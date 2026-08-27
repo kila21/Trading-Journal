@@ -141,7 +141,7 @@ export function SetupDetailOverview({ id }: { id: string }) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label={t("tableTrades")} value={String(summary.count)} />
         <StatTile
           label={t("tableWinRate")}

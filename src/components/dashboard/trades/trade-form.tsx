@@ -10,12 +10,14 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleChipGroup } from "@/components/ui/toggle-chip-group";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatFullDate, toLocale } from "@/components/dashboard/calendar/format-date";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { ChevronRightIcon, ImageIcon } from "@/components/dashboard/icons";
 import { tradeSymbols } from "@/config/trade-symbols";
 import { tradeMistakeTags, type TradeMistakeTag } from "@/config/trade-mistake-tags";
 import { useSetups } from "@/components/dashboard/playbook/use-setups";
+import { useTradingSettings } from "@/components/dashboard/settings/use-trading-settings";
 import { formatRMultiple, formatDuration } from "./trade-stats";
 import { getTradingSession, sessionTranslationKeys } from "./trading-session";
 import { cn } from "@/lib/utils";
@@ -170,6 +172,8 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
       mistakeTags: trade.mistakeTags,
       followedPlan: trade.followedPlan === true,
       checkedConditions: trade.checkedConditions,
+      commission: trade.commission === null ? "" : String(trade.commission),
+      riskAmount: trade.riskAmount === null ? "" : String(trade.riskAmount),
     };
   }
 
@@ -190,6 +194,8 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
     mistakeTags: [] as TradeMistakeTag[],
     followedPlan: false,
     checkedConditions: [] as string[],
+    commission: "",
+    riskAmount: "",
   };
 }
 
@@ -207,12 +213,15 @@ export function TradeForm({
   const t = useTranslations("dashboard");
   const locale = toLocale(useLocale());
   const { setups } = useSetups();
+  const { settings: tradingSettings } = useTradingSettings();
+  const accountBalance = tradingSettings?.accountBalance ?? null;
   const [form, setForm] = useState(() => formStateFor(trade, date));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdTrade, setCreatedTrade] = useState<TradeDTO | undefined>(undefined);
   const [pendingImages, setPendingImages] = useState<PendingImageEntry[]>([]);
   const [imagesOpen, setImagesOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Once a create succeeds, `createdTrade` takes over from the `trade` prop —
   // this is what prevents a retry (e.g. after a failed image upload) from
@@ -227,6 +236,15 @@ export function TradeForm({
   const pnlMagnitude = Number(form.pnl);
   const computedPnl =
     form.pnl !== "" && Number.isFinite(pnlMagnitude) ? pnlSign * Math.abs(pnlMagnitude) : null;
+
+  const riskAmountValue = Number(form.riskAmount);
+  const liveRiskPercent =
+    accountBalance !== null &&
+    accountBalance > 0 &&
+    form.riskAmount !== "" &&
+    Number.isFinite(riskAmountValue)
+      ? (riskAmountValue / accountBalance) * 100
+      : null;
 
   const riskReward = computeRiskReward(form.entryPrice, form.stopLoss, form.takeProfit);
   const liveHoldMinutes = computeLiveHoldMinutes(form.time, form.exitTime);
@@ -301,6 +319,8 @@ export function TradeForm({
       mistakeTags: form.mistakeTags,
       followedPlan: form.followedPlan,
       checkedConditions: form.checkedConditions,
+      commission: form.commission === "" ? null : Number(form.commission),
+      riskAmount: form.riskAmount === "" ? null : Number(form.riskAmount),
     };
 
     const isCreating = !effectiveTrade;
@@ -331,30 +351,35 @@ export function TradeForm({
       setCreatedTrade(savedTrade);
     }
 
-    let uploadFailed = false;
+    let failedUploadCount = 0;
+    let totalUploadCount = 0;
 
     if (isCreating && pendingImages.length > 0) {
-      for (const entry of pendingImages) {
-        const formData = new FormData();
-        formData.append("file", entry.file);
-        formData.append("timeframe", entry.timeframe);
-        formData.append("caption", entry.caption);
+      totalUploadCount = pendingImages.length;
+      const results = await Promise.allSettled(
+        pendingImages.map(async (entry) => {
+          const formData = new FormData();
+          formData.append("file", entry.file);
+          formData.append("timeframe", entry.timeframe);
+          formData.append("caption", entry.caption);
 
-        const uploadResponse = await fetch(`/api/trades/${savedTrade.id}/images`, {
-          method: "POST",
-          body: formData,
-        });
+          const uploadResponse = await fetch(`/api/trades/${savedTrade.id}/images`, {
+            method: "POST",
+            body: formData,
+          });
 
-        if (!uploadResponse.ok) uploadFailed = true;
-      }
+          if (!uploadResponse.ok) throw new Error("upload failed");
+        }),
+      );
+      failedUploadCount = results.filter((result) => result.status === "rejected").length;
       setPendingImages([]);
     }
 
     setPending(false);
     onSaved();
 
-    if (uploadFailed) {
-      setError(t("imageUploadFailed"));
+    if (failedUploadCount > 0) {
+      setError(t("imageUploadFailedCount", { count: failedUploadCount, total: totalUploadCount }));
       setImagesOpen(true);
       return;
     }
@@ -362,10 +387,15 @@ export function TradeForm({
     onClose();
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!effectiveTrade) return;
-    if (!window.confirm(t("confirmDeleteTrade"))) return;
+    setConfirmingDelete(true);
+  }
 
+  async function confirmDelete() {
+    if (!effectiveTrade) return;
+
+    setConfirmingDelete(false);
     setPending(true);
     const response = await fetch(`/api/trades/${effectiveTrade.id}`, { method: "DELETE" });
     setPending(false);
@@ -387,7 +417,7 @@ export function TradeForm({
       </p>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-left">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="symbol">{t("symbolLabel")}</Label>
             <Input
@@ -416,7 +446,7 @@ export function TradeForm({
 
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted">{t("planSectionLabel")}</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="entryPrice">{t("entryPriceLabel")}</Label>
               <Input
@@ -453,6 +483,25 @@ export function TradeForm({
               />
               {takeProfitWarning && <p className="text-xs text-warning">{t("takeProfitWarning")}</p>}
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="riskAmount">{t("riskAmountLabel")}</Label>
+              <Input
+                id="riskAmount"
+                name="riskAmount"
+                type="number"
+                step="any"
+                min="0"
+                value={form.riskAmount}
+                onChange={handleChange}
+              />
+              {liveRiskPercent !== null ? (
+                <p className="text-xs text-muted">
+                  {t("riskPercentOfAccount", { percent: liveRiskPercent.toFixed(1) })}
+                </p>
+              ) : (
+                <p className="text-xs text-muted">{t("riskAmountHint")}</p>
+              )}
+            </div>
           </div>
 
           {riskReward && (
@@ -479,7 +528,7 @@ export function TradeForm({
 
         <div className="space-y-3">
           <p className="text-sm font-medium text-muted">{t("resultSectionLabel")}</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="exitPrice">{t("exitPriceLabel")}</Label>
               <Input
@@ -535,11 +584,24 @@ export function TradeForm({
                 </p>
               )}
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="commission">{t("commissionLabel")}</Label>
+              <Input
+                id="commission"
+                name="commission"
+                type="number"
+                step="any"
+                min="0"
+                value={form.commission}
+                onChange={handleChange}
+              />
+              <p className="text-xs text-muted">{t("commissionHint")}</p>
+            </div>
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="dateInput">{t("tradeDateLabel")}</Label>
               <Input
@@ -703,6 +765,17 @@ export function TradeForm({
           </div>
         </div>
       </form>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          message={t("confirmDeleteTrade")}
+          confirmLabel={t("deleteTrade")}
+          cancelLabel={t("cancel")}
+          pending={pending}
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </>
   );
 }

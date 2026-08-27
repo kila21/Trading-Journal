@@ -12,6 +12,7 @@ export function StatTile({
   value,
   secondary,
   warning,
+  footnote,
   tone = "neutral",
 }: {
   label: string;
@@ -20,6 +21,9 @@ export function StatTile({
   // Takes over the secondary-line slot when present — e.g. "Low sample" on
   // a ratio stat that isn't reliable yet with only a handful of trades.
   warning?: string;
+  // Always renders below secondary/warning, independent of either — e.g. a
+  // "net after fees" figure alongside the trade-count/win-rate secondary.
+  footnote?: string;
   tone?: keyof typeof toneClass;
 }) {
   return (
@@ -34,6 +38,7 @@ export function StatTile({
       ) : (
         secondary && <p className="mt-0.5 text-xs text-muted">{secondary}</p>
       )}
+      {footnote && <p className="mt-0.5 text-xs text-muted">{footnote}</p>}
     </div>
   );
 }

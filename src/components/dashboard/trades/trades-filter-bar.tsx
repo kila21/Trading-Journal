@@ -35,6 +35,7 @@ export function TradesFilterBar({
   filters,
   onFiltersChange,
   onAddTrade,
+  onExport,
 }: {
   range: AnalyticsRange;
   onRangeChange: (range: AnalyticsRange) => void;
@@ -42,6 +43,7 @@ export function TradesFilterBar({
   filters: TradeFilters;
   onFiltersChange: (next: TradeFilters) => void;
   onAddTrade: () => void;
+  onExport: () => void;
 }) {
   const t = useTranslations("dashboard");
   const { setups } = useSetups();
@@ -169,6 +171,9 @@ export function TradesFilterBar({
             className="pl-9"
           />
         </div>
+        <Button type="button" variant="outline" onClick={onExport}>
+          {t("exportCsv")}
+        </Button>
         <Button type="button" onClick={onAddTrade}>
           {t("addTrade")}
         </Button>

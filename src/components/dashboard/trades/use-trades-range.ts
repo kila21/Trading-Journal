@@ -9,6 +9,7 @@ export type AnalyticsRange = "month" | "90d" | "ytd" | "all";
 export function useTradesRange(range: AnalyticsRange) {
   const [trades, setTrades] = useState<TradeDTO[]>([]);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const key = `${range}-${refreshKey}`;
@@ -21,6 +22,13 @@ export function useTradesRange(range: AnalyticsRange) {
       .then(({ ok, body }) => {
         if (cancelled) return;
         setTrades(ok ? (body.trades as TradeDTO[]) : []);
+        setError(!ok);
+        setLoadedKey(key);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTrades([]);
+        setError(true);
         setLoadedKey(key);
       });
 
@@ -31,5 +39,5 @@ export function useTradesRange(range: AnalyticsRange) {
 
   const refetch = useCallback(() => setRefreshKey((prev) => prev + 1), []);
 
-  return { trades, isLoading: loadedKey !== key, refetch };
+  return { trades, isLoading: loadedKey !== key, error, refetch };
 }

@@ -7,6 +7,7 @@ import type { SetupDTO } from "@/types/setup";
 export function useSetups() {
   const [setups, setSetups] = useState<SetupDTO[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -17,6 +18,13 @@ export function useSetups() {
       .then(({ ok, body }) => {
         if (cancelled) return;
         setSetups(ok ? (body.setups as SetupDTO[]) : []);
+        setError(!ok);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSetups([]);
+        setError(true);
         setLoaded(true);
       });
 
@@ -27,5 +35,5 @@ export function useSetups() {
 
   const refetch = useCallback(() => setRefreshKey((prev) => prev + 1), []);
 
-  return { setups, isLoading: !loaded, refetch };
+  return { setups, isLoading: !loaded, error, refetch };
 }

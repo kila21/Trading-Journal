@@ -21,6 +21,7 @@
     "@netlify/blobs": "^10.7.9",
     "@prisma/adapter-neon": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@tanstack/react-virtual": "^3.14.10",
     "better-auth": "^1.6.23",
     "next": "16.2.10",
     "next-intl": "^4.13.1",

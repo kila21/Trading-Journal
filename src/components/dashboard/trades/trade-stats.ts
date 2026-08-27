@@ -3,16 +3,18 @@
 // per-trade quality metrics (hold duration, planned/achieved R) and simple
 // portfolio-wide ratios (profit factor, expectancy). Multi-trade breakdowns
 // by setup/mistake-tags/plan-adherence live in trade-breakdown-stats.ts.
-import type { TradeDTO, DailyStats, MonthSummary, EquityPoint, WinLossBreakdown } from "@/types/trade";
+import type { TradeDTO, DailyStats, MonthSummary, EquityPoint, WinLossBreakdown, WeekSummary } from "@/types/trade";
+import type { CalendarDay } from "@/types/calendar";
 
 export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
   const stats = new Map<number, DailyStats>();
 
   for (const trade of trades) {
     const day = new Date(trade.tradeDate).getDate();
-    const existing = stats.get(day) ?? { pnl: 0, trades: 0, wins: 0, firstTradeDate: trade.tradeDate };
+    const existing = stats.get(day) ?? { pnl: 0, commission: 0, trades: 0, wins: 0, firstTradeDate: trade.tradeDate };
 
     existing.pnl += trade.pnl;
+    existing.commission += trade.commission ?? 0;
     existing.trades += 1;
     if (trade.pnl >= 0) existing.wins += 1;
     if (trade.tradeDate < existing.firstTradeDate) existing.firstTradeDate = trade.tradeDate;
@@ -21,6 +23,30 @@ export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
   }
 
   return stats;
+}
+
+/**
+ * Sums DailyStats for the days in `week` that belong to the currently
+ * displayed month — the same isCurrentMonth gate calendar.tsx already uses
+ * when looking up a single day's stats, which is what keeps this safe from
+ * groupTradesByDay's day-of-month-only keys colliding with the leading/
+ * trailing days from adjacent months. Null when the week had no trades.
+ */
+export function computeWeekSummary(week: CalendarDay[], dailyStats: Map<number, DailyStats>): WeekSummary | null {
+  let pnl = 0;
+  let trades = 0;
+  let wins = 0;
+
+  for (const day of week) {
+    if (!day.isCurrentMonth) continue;
+    const stats = dailyStats.get(day.day);
+    if (!stats) continue;
+    pnl += stats.pnl;
+    trades += stats.trades;
+    wins += stats.wins;
+  }
+
+  return trades > 0 ? { pnl, trades, wins } : null;
 }
 
 export function computeMonthSummary(dailyStats: Map<number, DailyStats>): MonthSummary {
@@ -214,4 +240,38 @@ export function computeExpectancy(trades: TradeDTO[]): number | null {
   const avgWin = wins.length > 0 ? wins.reduce((sum, t) => sum + t.pnl, 0) / wins.length : 0;
   const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0)) / losses.length : 0;
   return winRate * avgWin - lossRate * avgLoss;
+}
+
+/**
+ * Net P&L after subtracting each trade's optional commission — `pnl` itself
+ * stays untouched everywhere else (it's the trader's manually-entered real
+ * result). Returns the same total as summing `pnl` when no trade has a
+ * commission set, so callers can always show this without an empty-state check.
+ */
+export function computeNetPnlAfterFees(trades: TradeDTO[]): number {
+  return trades.reduce((sum, trade) => sum + trade.pnl - (trade.commission ?? 0), 0);
+}
+
+/** True when at least one trade in the set has a commission recorded. */
+export function hasAnyCommission(trades: TradeDTO[]): boolean {
+  return trades.some((trade) => trade.commission !== null);
+}
+
+/**
+ * Risk as a percentage of account balance, from the trader's manually-
+ * entered `riskAmount` (see prisma/schema.prisma for why this isn't derived
+ * from stop-loss distance). Null when either side of the ratio is missing
+ * or the balance is zero.
+ */
+export function computeRiskPercent(trade: TradeDTO, accountBalance: number | null): number | null {
+  if (trade.riskAmount === null || accountBalance === null || accountBalance === 0) return null;
+  return (trade.riskAmount / accountBalance) * 100;
+}
+
+/** Average risk % across trades that have both a riskAmount and a usable account balance. */
+export function computeAverageRiskPercent(trades: TradeDTO[], accountBalance: number | null): number | null {
+  const percents = trades
+    .map((trade) => computeRiskPercent(trade, accountBalance))
+    .filter((value): value is number => value !== null);
+  return percents.length > 0 ? percents.reduce((sum, value) => sum + value, 0) / percents.length : null;
 }

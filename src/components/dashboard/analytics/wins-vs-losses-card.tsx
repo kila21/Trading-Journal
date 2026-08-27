@@ -15,7 +15,7 @@ export function WinsVsLossesCard({ breakdown }: { breakdown: WinLossBreakdown })
     <Card>
       <h2 className="text-lg font-semibold">{t("winsVsLossesTitle")}</h2>
 
-      <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
           label={t("avgWin")}
           value={breakdown.avgWin === null ? "—" : formatPnl(breakdown.avgWin)}

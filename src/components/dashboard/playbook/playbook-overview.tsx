@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/ui/error-state";
 import { useRouter } from "@/i18n/navigation";
 import { useSetups } from "./use-setups";
 import { PlaybookEmptyState } from "./playbook-empty-state";
+import { PlaybookSkeleton } from "./playbook-skeleton";
 import { SetupCard } from "./setup-card";
 import { SetupFormModal } from "./setup-form-modal";
 import type { SetupDTO } from "@/types/setup";
@@ -13,7 +15,10 @@ import type { SetupDTO } from "@/types/setup";
 export function PlaybookOverview() {
   const t = useTranslations("dashboard");
   const router = useRouter();
-  const { setups, refetch } = useSetups();
+  const { setups, isLoading, error, refetch } = useSetups();
+  // Derived without an effect so a refetch never re-shows the full skeleton.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  if (!isLoading && !hasLoadedOnce) setHasLoadedOnce(true);
 
   const [modal, setModal] = useState<"form" | null>(null);
 
@@ -38,7 +43,11 @@ export function PlaybookOverview() {
         </Button>
       </div>
 
-      {setups.length === 0 ? (
+      {error ? (
+        <ErrorState message={t("loadError")} retryLabel={t("retry")} onRetry={refetch} />
+      ) : !hasLoadedOnce && isLoading ? (
+        <PlaybookSkeleton />
+      ) : setups.length === 0 ? (
         <PlaybookEmptyState onAddSetup={handleAdd} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

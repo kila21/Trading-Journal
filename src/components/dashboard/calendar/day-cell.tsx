@@ -13,6 +13,7 @@ export function DayCell({
   trades,
   winRate,
   sessionLabel,
+  isWeekend = false,
   onClick,
 }: {
   day: CalendarDay;
@@ -22,11 +23,16 @@ export function DayCell({
   trades?: number;
   winRate?: number;
   sessionLabel?: string;
+  isWeekend?: boolean;
   onClick?: () => void;
 }) {
   const t = useTranslations("dashboard");
   const hasPnl = typeof pnlLabel === "string";
   const accent = tone === "profit" ? "var(--success)" : tone === "loss" ? "var(--danger)" : undefined;
+  // An empty weekend (no trades, not today) shrinks and dims so trading
+  // weekdays visually dominate the row — weekends still work normally once
+  // a trade is logged on one (crypto/forex traders do trade them).
+  const isEmptyWeekend = day.isCurrentMonth && isWeekend && !hasPnl && !day.isToday;
 
   // Tailwind can't statically extract a class name built from a runtime
   // intensity value, so the graded fill/border come from inline styles that
@@ -57,7 +63,8 @@ export function DayCell({
           : undefined
       }
       className={cn(
-        "flex min-h-24 flex-col justify-between rounded-lg border p-2",
+        "flex flex-col justify-between rounded-lg border p-2",
+        isEmptyWeekend ? "min-h-14 opacity-60 sm:min-h-16" : "min-h-16 sm:min-h-24",
         onClick && "cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary",
         day.isCurrentMonth ? "border-border bg-surface" : "border-transparent bg-background/40 opacity-40",
         day.isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background",
@@ -74,19 +81,19 @@ export function DayCell({
           {day.day}
         </span>
         {sessionLabel && (
-          <span className="whitespace-nowrap rounded-full border border-border bg-background/60 px-1.5 py-0.5 text-[10px] font-bold text-foreground">
+          <span className="hidden whitespace-nowrap rounded-full border border-border bg-background/60 px-1.5 py-0.5 text-[10px] font-bold text-foreground sm:inline-block">
             {sessionLabel}
           </span>
         )}
       </div>
       {hasPnl && (
         <div>
-          <span className="block text-sm font-semibold text-foreground">{pnlLabel}</span>
+          <span className="block truncate text-xs font-semibold text-foreground sm:text-sm">{pnlLabel}</span>
           {typeof trades === "number" && (
-            <span className="block text-xs text-muted">{t("trades", { count: trades })}</span>
+            <span className="hidden text-xs text-muted sm:block">{t("trades", { count: trades })}</span>
           )}
           {typeof winRate === "number" && (
-            <span className="block text-xs text-muted">{t("winRateStat", { rate: winRate })}</span>
+            <span className="hidden text-xs text-muted sm:block">{t("winRateStat", { rate: winRate })}</span>
           )}
         </div>
       )}

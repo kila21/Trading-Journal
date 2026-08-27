@@ -6,6 +6,7 @@ import type { TradeImageDTO } from "@/types/trade";
 export function useTradeImages(tradeId: string) {
   const [images, setImages] = useState<TradeImageDTO[]>([]);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const key = `${tradeId}-${refreshKey}`;
@@ -18,6 +19,13 @@ export function useTradeImages(tradeId: string) {
       .then(({ ok, body }) => {
         if (cancelled) return;
         setImages(ok ? (body.images as TradeImageDTO[]) : []);
+        setError(!ok);
+        setLoadedKey(key);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setImages([]);
+        setError(true);
         setLoadedKey(key);
       });
 
@@ -28,5 +36,5 @@ export function useTradeImages(tradeId: string) {
 
   const refetch = useCallback(() => setRefreshKey((prev) => prev + 1), []);
 
-  return { images, isLoading: loadedKey !== key, refetch };
+  return { images, isLoading: loadedKey !== key, error, refetch };
 }

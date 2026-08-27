@@ -96,7 +96,7 @@ export function PasswordRecoveryModal({ onClose }: { onClose: () => void }) {
               onChange={handleChange}
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               {t("cancel")}

@@ -8,11 +8,13 @@ import { formatPnl } from "@/components/dashboard/format-pnl";
 import { cn } from "@/lib/utils";
 import { TradeImageGallery } from "./trade-image-gallery";
 import { getTradingSession, sessionTranslationKeys } from "./trading-session";
+import { useTradingSettings } from "@/components/dashboard/settings/use-trading-settings";
 import {
   computeHoldDurationMinutes,
   formatDuration,
   computePlannedR,
   computeAchievedR,
+  computeRiskPercent,
   formatRMultiple,
 } from "./trade-stats";
 import type { TradeDTO } from "@/types/trade";
@@ -35,11 +37,13 @@ export function TradeDetailModal({
 }) {
   const t = useTranslations("dashboard");
   const locale = toLocale(useLocale());
+  const { settings } = useTradingSettings();
   const isProfit = trade.pnl >= 0;
   const session = getTradingSession(new Date(trade.tradeDate));
   const holdDurationMinutes = computeHoldDurationMinutes(trade);
   const plannedR = computePlannedR(trade);
   const achievedR = computeAchievedR(trade);
+  const riskPercent = computeRiskPercent(trade, settings?.accountBalance ?? null);
 
   return (
     <Dialog onClose={onClose} className="max-w-3xl">
@@ -90,6 +94,18 @@ export function TradeDetailModal({
         )}
         {plannedR !== null && <TextSummaryItem label={t("plannedRLabel")} value={formatRMultiple(plannedR)} />}
         {achievedR !== null && <TextSummaryItem label={t("achievedRLabel")} value={formatRMultiple(achievedR)} />}
+        {trade.commission !== null && (
+          <TextSummaryItem label={t("commissionLabel")} value={formatPnl(-trade.commission)} />
+        )}
+        {trade.riskAmount !== null && (
+          <TextSummaryItem label={t("riskAmountLabel")} value={formatPnl(trade.riskAmount)} />
+        )}
+        {riskPercent !== null && (
+          <TextSummaryItem
+            label={t("riskPercentLabel")}
+            value={t("riskPercentOfAccount", { percent: riskPercent.toFixed(1) })}
+          />
+        )}
         {trade.followedPlan !== null && (
           <TextSummaryItem
             label={t("followedPlanLabel")}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PencilIcon } from "@/components/dashboard/icons";
 import { tradeTimeframes } from "@/config/trade-timeframes";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,8 @@ function ImageCard({ image, onChanged }: { image: TradeImageDTO; onChanged: () =
   const [timeframe, setTimeframe] = useState<TradeTimeframe>(image.timeframe);
   const [caption, setCaption] = useState(image.caption ?? "");
   const [pending, setPending] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
 
   function startEditing() {
     setTimeframe(image.timeframe);
@@ -67,9 +70,11 @@ function ImageCard({ image, onChanged }: { image: TradeImageDTO; onChanged: () =
     onChanged();
   }
 
-  async function handleDelete() {
-    if (!window.confirm(t("confirmDeleteImage"))) return;
+  async function confirmDelete() {
+    setConfirmingDelete(false);
+    setDeletePending(true);
     await fetch(`/api/trade-images/${image.id}`, { method: "DELETE" });
+    setDeletePending(false);
     onChanged();
   }
 
@@ -109,7 +114,7 @@ function ImageCard({ image, onChanged }: { image: TradeImageDTO; onChanged: () =
                 <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={cancelEditing}>
                   {t("cancel")}
                 </Button>
-                <Button type="button" variant="outline" size="sm" className="ml-auto" onClick={handleDelete}>
+                <Button type="button" variant="outline" size="sm" className="ml-auto" onClick={() => setConfirmingDelete(true)}>
                   {t("deleteImage")}
                 </Button>
               </div>
@@ -133,13 +138,24 @@ function ImageCard({ image, onChanged }: { image: TradeImageDTO; onChanged: () =
               <p className={cn("text-sm", image.caption ? "text-muted" : "italic text-muted/60")}>
                 {image.caption || t("noCaption")}
               </p>
-              <Button type="button" variant="outline" size="sm" onClick={handleDelete}>
+              <Button type="button" variant="outline" size="sm" onClick={() => setConfirmingDelete(true)}>
                 {t("deleteImage")}
               </Button>
             </>
           )}
         </div>
       </div>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          message={t("confirmDeleteImage")}
+          confirmLabel={t("deleteImage")}
+          cancelLabel={t("cancel")}
+          pending={deletePending}
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   );
 }

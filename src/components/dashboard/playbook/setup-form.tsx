@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ToggleChipGroup } from "@/components/ui/toggle-chip-group";
 import { DragHandleIcon, XIcon } from "@/components/dashboard/icons";
 import { tradeInstruments, type TradeInstrument } from "@/config/trade-instruments";
@@ -157,6 +158,7 @@ export function SetupForm({
   const [form, setForm] = useState(() => formStateFor(setup));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target;
@@ -204,10 +206,15 @@ export function SetupForm({
     onClose();
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!setup) return;
-    if (!window.confirm(t("confirmDeleteSetup"))) return;
+    setConfirmingDelete(true);
+  }
 
+  async function confirmDelete() {
+    if (!setup) return;
+
+    setConfirmingDelete(false);
     setPending(true);
     const response = await fetch(`/api/setups/${setup.id}`, { method: "DELETE" });
     setPending(false);
@@ -246,7 +253,7 @@ export function SetupForm({
           onChange={(conditions) => setForm((prev) => ({ ...prev, conditions }))}
         />
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="stopRule">{t("stopRuleLabel")}</Label>
             <Input id="stopRule" name="stopRule" value={form.stopRule} onChange={handleChange} />
@@ -300,6 +307,17 @@ export function SetupForm({
           </div>
         </div>
       </form>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          message={t("confirmDeleteSetup")}
+          confirmLabel={t("deleteSetup")}
+          cancelLabel={t("cancel")}
+          pending={pending}
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </>
   );
 }

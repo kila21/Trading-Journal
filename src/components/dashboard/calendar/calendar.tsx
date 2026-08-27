@@ -5,10 +5,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { getTradingSession, sessionTranslationKeys } from "@/components/dashboard/trades/trading-session";
+import { computeWeekSummary } from "@/components/dashboard/trades/trade-stats";
 import type { DailyStats } from "@/types/trade";
 import { toLocale } from "./format-date";
 import { CalendarHeader } from "./calendar-header";
 import { DayCell } from "./day-cell";
+import { WeekSummaryBar } from "./week-summary-bar";
 import { buildCalendarWeeks, getWeekdayLabels } from "./calendar-grid";
 
 export function Calendar({
@@ -50,40 +52,54 @@ export function Calendar({
         onNextMonth={onNextMonth}
         onToday={onToday}
       />
-      <div className="mt-4 grid grid-cols-7 gap-2">
-        {weekdayLabels.map((label) => (
-          <div
-            key={label}
-            className="text-center text-xs font-medium uppercase text-muted"
-          >
-            {label}
-          </div>
-        ))}
-        {weeks.map((week, weekIndex) =>
-          week.map((day) => {
-            const stats = day.isCurrentMonth ? dailyStats.get(day.day) : undefined;
-            const tone = stats ? (stats.pnl > 0 ? "profit" : stats.pnl < 0 ? "loss" : "neutral") : undefined;
-            const intensity = stats
-              ? Math.min(1, Math.max(0.3, Math.abs(stats.pnl) / maxAbsPnl))
-              : undefined;
-            const winRate = stats ? Math.round((stats.wins / stats.trades) * 100) : undefined;
-            const session = stats ? getTradingSession(new Date(stats.firstTradeDate)) : null;
+      <div className="mt-4 space-y-2">
+        <div className="grid grid-cols-7 gap-2">
+          {weekdayLabels.map((label) => (
+            <div
+              key={label}
+              className="text-center text-xs font-medium uppercase text-muted"
+            >
+              {label}
+            </div>
+          ))}
+        </div>
 
-            return (
-              <DayCell
-                key={`${weekIndex}-${day.date.toISOString()}`}
-                day={day}
-                pnlLabel={stats ? formatPnl(stats.pnl) : undefined}
-                tone={tone}
-                intensity={intensity}
-                trades={stats?.trades}
-                winRate={winRate}
-                sessionLabel={session ? t(sessionTranslationKeys[session.name]) : undefined}
-                onClick={day.isCurrentMonth ? () => onDayClick(day.date) : undefined}
-              />
-            );
-          }),
-        )}
+        {weeks.map((week, weekIndex) => {
+          const weekSummary = computeWeekSummary(week, dailyStats);
+
+          return (
+            <div key={weekIndex} className="flex flex-col gap-2 lg:flex-row">
+              <div className="grid flex-1 grid-cols-7 gap-2">
+                {week.map((day) => {
+                  const stats = day.isCurrentMonth ? dailyStats.get(day.day) : undefined;
+                  const tone = stats ? (stats.pnl > 0 ? "profit" : stats.pnl < 0 ? "loss" : "neutral") : undefined;
+                  const intensity = stats
+                    ? Math.min(1, Math.max(0.3, Math.abs(stats.pnl) / maxAbsPnl))
+                    : undefined;
+                  const winRate = stats ? Math.round((stats.wins / stats.trades) * 100) : undefined;
+                  const session = stats ? getTradingSession(new Date(stats.firstTradeDate)) : null;
+                  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+
+                  return (
+                    <DayCell
+                      key={day.date.toISOString()}
+                      day={day}
+                      pnlLabel={stats ? formatPnl(stats.pnl) : undefined}
+                      tone={tone}
+                      intensity={intensity}
+                      trades={stats?.trades}
+                      winRate={winRate}
+                      sessionLabel={session ? t(sessionTranslationKeys[session.name]) : undefined}
+                      isWeekend={isWeekend}
+                      onClick={day.isCurrentMonth ? () => onDayClick(day.date) : undefined}
+                    />
+                  );
+                })}
+              </div>
+              <WeekSummaryBar summary={weekSummary} />
+            </div>
+          );
+        })}
       </div>
     </Card>
   );

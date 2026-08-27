@@ -21,6 +21,12 @@ export interface TradeDTO {
   mistakeTags: TradeMistakeTag[];
   followedPlan: boolean | null;
   checkedConditions: string[];
+  // Optional fee/commission in dollars — separate from `pnl`, which stays
+  // exactly as manually entered (see prisma/schema.prisma's Trade.commission).
+  commission: number | null;
+  // Optional dollar amount manually entered as "at risk" on this trade (see
+  // prisma/schema.prisma's Trade.riskAmount for why this isn't auto-derived).
+  riskAmount: number | null;
 }
 
 // Server-side validated shape for creating/updating a trade (same fields as
@@ -41,6 +47,8 @@ export interface TradeInput {
   mistakeTags: TradeMistakeTag[];
   followedPlan: boolean | null;
   checkedConditions: string[];
+  commission: number | null;
+  riskAmount: number | null;
 }
 
 export interface TradeImageDTO {
@@ -62,6 +70,8 @@ export interface PendingImageEntry {
 
 export interface DailyStats {
   pnl: number;
+  // Sum of each trade's optional commission that day — 0 when none set.
+  commission: number;
   trades: number;
   wins: number;
   // ISO timestamp of the earliest trade opened that day — used to resolve
@@ -73,6 +83,15 @@ export interface MonthSummary {
   bestDay: { day: number; pnl: number } | null;
   worstDay: { day: number; pnl: number } | null;
   streak: { type: "win" | "loss"; count: number } | null;
+}
+
+// Rollup of a calendar week's DailyStats, shown in the week summary bar next
+// to each row. Null when the week (restricted to days in the currently
+// displayed month) had no trades at all.
+export interface WeekSummary {
+  pnl: number;
+  trades: number;
+  wins: number;
 }
 
 // A point on the cumulative-P&L equity curve. `point` 0 is the synthetic
