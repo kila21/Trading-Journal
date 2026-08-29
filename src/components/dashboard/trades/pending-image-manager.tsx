@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PencilIcon } from "@/components/dashboard/icons";
 import { tradeTimeframes } from "@/config/trade-timeframes";
 import { cn } from "@/lib/utils";
+import { useImageDropZone } from "./use-image-drop-zone";
 import type { PendingImageEntry } from "@/types/trade";
 import type { TradeTimeframe } from "@/config/trade-timeframes";
 
@@ -158,6 +159,18 @@ function AddPendingTimeframe({ onAdd }: { onAdd: (entry: PendingImageEntry) => v
   const [caption, setCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const { dragActive, dropZoneProps } = useImageDropZone(
+    (dropped) => {
+      setError(null);
+      setIsAdding(true);
+      setFile(dropped);
+    },
+    (message) => {
+      setIsAdding(true);
+      setError(message);
+    },
+  );
+
   function reset() {
     setIsAdding(false);
     setTimeframe(tradeTimeframes[0]);
@@ -182,60 +195,68 @@ function AddPendingTimeframe({ onAdd }: { onAdd: (entry: PendingImageEntry) => v
     reset();
   }
 
-  if (!isAdding) {
-    return (
-      <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setIsAdding(true)}>
-        {t("addTimeframe")}
-      </Button>
-    );
-  }
-
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-border bg-background/40 p-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="new-pending-timeframe">{t("timeframeLabel")}</Label>
-          <Select
-            id="new-pending-timeframe"
-            value={timeframe}
-            onChange={(event) => setTimeframe(event.target.value as TradeTimeframe)}
-          >
-            {tradeTimeframes.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="new-pending-image">{t("imageLabel")}</Label>
-          <input
-            id="new-pending-image"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground"
-          />
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="new-pending-caption">{t("captionLabel")}</Label>
-        <Textarea
-          id="new-pending-caption"
-          value={caption}
-          onChange={(event) => setCaption(event.target.value)}
-          placeholder={t("captionPlaceholder")}
-        />
-      </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={reset}>
-          {t("cancel")}
+    <div
+      {...dropZoneProps}
+      className={cn(
+        "mt-3 rounded-lg",
+        dragActive && "outline-2 outline-dashed outline-primary outline-offset-2",
+      )}
+    >
+      {!isAdding ? (
+        <Button type="button" variant="outline" size="sm" onClick={() => setIsAdding(true)}>
+          {t("addTimeframe")}
         </Button>
-        <Button type="button" size="sm" onClick={handleSubmit}>
-          {t("addTimeframeSubmit")}
-        </Button>
-      </div>
+      ) : (
+        <div className="space-y-3 rounded-lg border border-border bg-background/40 p-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-pending-timeframe">{t("timeframeLabel")}</Label>
+              <Select
+                id="new-pending-timeframe"
+                value={timeframe}
+                onChange={(event) => setTimeframe(event.target.value as TradeTimeframe)}
+              >
+                {tradeTimeframes.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-pending-image">{t("imageLabel")}</Label>
+              <input
+                id="new-pending-image"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground"
+              />
+              {file && <p className="truncate text-xs text-muted">{file.name}</p>}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-pending-caption">{t("captionLabel")}</Label>
+            <Textarea
+              id="new-pending-caption"
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              placeholder={t("captionPlaceholder")}
+            />
+          </div>
+          <p className="text-xs text-muted">{t("dropImageHere")}</p>
+          {error && <p className="text-sm text-danger">{error}</p>}
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={reset}>
+              {t("cancel")}
+            </Button>
+            <Button type="button" size="sm" onClick={handleSubmit}>
+              {t("addTimeframeSubmit")}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

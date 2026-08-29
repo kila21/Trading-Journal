@@ -8,6 +8,8 @@ import { EquityCurveCard } from "@/components/dashboard/overview/equity-curve-ca
 import { ViewToggle, type OverviewView } from "@/components/dashboard/overview/view-toggle";
 import { DashboardOverviewSkeleton } from "@/components/dashboard/overview/dashboard-overview-skeleton";
 import { Calendar } from "@/components/dashboard/calendar/calendar";
+import { CalendarAgenda } from "@/components/dashboard/calendar/calendar-agenda";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { useMonthTrades } from "@/components/dashboard/trades/use-month-trades";
 import { groupTradesByDay } from "@/components/dashboard/trades/trade-stats";
 import { TradeReviewModal } from "@/components/dashboard/trades/trade-review-modal";
@@ -38,7 +40,17 @@ export function DashboardOverview() {
   if (!isLoading && !hasLoadedOnce) setHasLoadedOnce(true);
 
   const dailyStats = useMemo(() => groupTradesByDay(trades), [trades]);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [activeView, setActiveView] = useState<OverviewView>("calendar");
+  const [viewTouched, setViewTouched] = useState(false);
+  // Default to the agenda list on phones until the user picks a view; once they
+  // do, honor their choice at every width.
+  const effectiveView: OverviewView = viewTouched ? activeView : isDesktop ? activeView : "agenda";
+
+  function handleViewChange(view: OverviewView) {
+    setViewTouched(true);
+    setActiveView(view);
+  }
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [modal, setModal] = useState<"review" | "form" | "detail" | null>(null);
@@ -123,10 +135,20 @@ export function DashboardOverview() {
       <NetPnlCard year={year} month={month} dailyStats={dailyStats} />
       <StatsGrid dailyStats={dailyStats} trades={trades} />
 
-      <ViewToggle value={activeView} onChange={setActiveView} />
+      <ViewToggle value={effectiveView} onChange={handleViewChange} />
 
-      {activeView === "calendar" ? (
+      {effectiveView === "calendar" ? (
         <Calendar
+          year={year}
+          month={month}
+          dailyStats={dailyStats}
+          onPrevMonth={goToPrevMonth}
+          onNextMonth={goToNextMonth}
+          onToday={goToToday}
+          onDayClick={handleDayClick}
+        />
+      ) : effectiveView === "agenda" ? (
+        <CalendarAgenda
           year={year}
           month={month}
           dailyStats={dailyStats}

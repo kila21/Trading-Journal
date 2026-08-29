@@ -1,9 +1,22 @@
 // Aggregates trades into per-day P&L stats and derives month-level summaries
 // (best/worst day, current streak, equity curve, max drawdown), plus
-// per-trade quality metrics (hold duration, planned/achieved R) and simple
-// portfolio-wide ratios (profit factor, expectancy). Multi-trade breakdowns
-// by setup/mistake-tags/plan-adherence live in trade-breakdown-stats.ts.
-import type { TradeDTO, DailyStats, MonthSummary, EquityPoint, WinLossBreakdown, WeekSummary } from "@/types/trade";
+// per-trade quality metrics (hold duration, planned/achieved R) and
+// portfolio-wide ratios and distributions (profit factor, expectancy,
+// expectancy in R, achieved-R histogram, hold-time buckets, consecutive
+// win/loss streaks). Multi-trade breakdowns by setup/session/symbol/direction/
+// weekday/hour/mistake-tags/plan-adherence live in trade-breakdown-stats.ts.
+import type {
+  TradeDTO,
+  DailyStats,
+  MonthSummary,
+  EquityPoint,
+  WinLossBreakdown,
+  WeekSummary,
+  RBucket,
+  HoldTimeComparison,
+  HoldBucket,
+  ConsecutiveStreaks,
+} from "@/types/trade";
 import type { CalendarDay } from "@/types/calendar";
 
 export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
@@ -133,9 +146,11 @@ export function computeMaxDrawdown(trades: TradeDTO[]): number {
 }
 
 /**
- * Minutes between trade open and close. Null when exitDate isn't set (old
- * trades, or a trade whose exit time wasn't recorded) — there's no "0
- * minutes" fallback since that would misleadingly imply an instant trade.
+ * Minutes between trade open and close. `exitDate` can fall on a later
+ * calendar day than `tradeDate` (swing/overnight holds), so this is a plain
+ * timestamp difference. Null when exitDate isn't set (old trades, or a trade
+ * whose exit time wasn't recorded) — there's no "0 minutes" fallback since
+ * that would misleadingly imply an instant trade.
  */
 export function computeHoldDurationMinutes(trade: TradeDTO): number | null {
   if (!trade.exitDate) return null;
@@ -143,11 +158,16 @@ export function computeHoldDurationMinutes(trade: TradeDTO): number | null {
   return Math.round(ms / 60000);
 }
 
+/** Compact hold duration: `45m`, `3h 12m`, or `2d 6h` for multi-day holds. */
 export function formatDuration(minutes: number): string {
-  const hours = Math.floor(Math.abs(minutes) / 60);
-  const mins = Math.abs(minutes) % 60;
   const sign = minutes < 0 ? "-" : "";
-  return hours > 0 ? `${sign}${hours}h ${mins}m` : `${sign}${mins}m`;
+  const total = Math.abs(minutes);
+  const days = Math.floor(total / 1440);
+  const hours = Math.floor((total % 1440) / 60);
+  const mins = total % 60;
+  if (days > 0) return `${sign}${days}d ${hours}h`;
+  if (hours > 0) return `${sign}${hours}h ${mins}m`;
+  return `${sign}${mins}m`;
 }
 
 /**
@@ -274,4 +294,126 @@ export function computeAverageRiskPercent(trades: TradeDTO[], accountBalance: nu
     .map((trade) => computeRiskPercent(trade, accountBalance))
     .filter((value): value is number => value !== null);
   return percents.length > 0 ? percents.reduce((sum, value) => sum + value, 0) / percents.length : null;
+}
+
+// Half-open bucket edges for the achieved-R distribution: a trade's R lands in
+// the first bucket whose edge it's `<=`, or the open-ended top bucket if it
+// exceeds them all. Breakeven (0R) falls in the `(-1, 0]` bucket.
+const R_BUCKET_EDGES = [-2, -1, 0, 1, 2, 3];
+
+/**
+ * Achieved-R histogram: one bucket per R_BUCKET_EDGES interval plus an open
+ * end on each side, each carrying its trade count and total P&L. Trades with
+ * no achieved R (missing stop / zero risk) are skipped.
+ */
+export function computeRMultipleDistribution(trades: TradeDTO[]): RBucket[] {
+  const buckets: RBucket[] = [];
+  for (let i = 0; i <= R_BUCKET_EDGES.length; i++) {
+    buckets.push({
+      key: `r${i}`,
+      min: i === 0 ? null : R_BUCKET_EDGES[i - 1],
+      max: i === R_BUCKET_EDGES.length ? null : R_BUCKET_EDGES[i],
+      count: 0,
+      totalPnl: 0,
+    });
+  }
+
+  for (const trade of trades) {
+    const r = computeAchievedR(trade);
+    if (r === null) continue;
+    let index = R_BUCKET_EDGES.findIndex((edge) => r <= edge);
+    if (index === -1) index = R_BUCKET_EDGES.length;
+    buckets[index].count += 1;
+    buckets[index].totalPnl += trade.pnl;
+  }
+
+  return buckets;
+}
+
+/** Mean achieved R across trades that have one — expectancy expressed in R. Null when none do. */
+export function computeExpectancyR(trades: TradeDTO[]): number | null {
+  const values = trades.map(computeAchievedR).filter((r): r is number => r !== null);
+  return values.length > 0 ? values.reduce((sum, r) => sum + r, 0) / values.length : null;
+}
+
+/**
+ * Average hold duration (minutes) for winning vs losing trades. Trades with no
+ * recorded exit time are ignored; each side is null independently when it has
+ * no such trade.
+ */
+export function computeHoldTimeComparison(trades: TradeDTO[]): HoldTimeComparison {
+  const winners: number[] = [];
+  const losers: number[] = [];
+  for (const trade of trades) {
+    const minutes = computeHoldDurationMinutes(trade);
+    if (minutes === null) continue;
+    (trade.pnl >= 0 ? winners : losers).push(minutes);
+  }
+  const average = (values: number[]) =>
+    values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  return { avgWinnerMinutes: average(winners), avgLoserMinutes: average(losers) };
+}
+
+const HOLD_BUCKET_ORDER = ["lt15", "15to60", "1to4h", "4to24h", "gt1d"] as const;
+
+function holdBucketKey(minutes: number): (typeof HOLD_BUCKET_ORDER)[number] {
+  if (minutes < 15) return "lt15";
+  if (minutes < 60) return "15to60";
+  if (minutes < 240) return "1to4h";
+  if (minutes < 1440) return "4to24h";
+  return "gt1d";
+}
+
+/**
+ * Trades grouped into hold-duration buckets (`<15m`, `15–60m`, `1–4h`,
+ * `4–24h`, `>1d`), each with win rate and total P&L. Only buckets with at
+ * least one trade are returned; trades with no exit time are excluded.
+ */
+export function computeHoldTimeBuckets(trades: TradeDTO[]): HoldBucket[] {
+  const map = new Map<string, HoldBucket>(
+    HOLD_BUCKET_ORDER.map((key) => [key, { key, trades: 0, wins: 0, winRate: 0, totalPnl: 0 }]),
+  );
+
+  for (const trade of trades) {
+    const minutes = computeHoldDurationMinutes(trade);
+    if (minutes === null) continue;
+    const bucket = map.get(holdBucketKey(minutes))!;
+    bucket.trades += 1;
+    if (trade.pnl >= 0) bucket.wins += 1;
+    bucket.totalPnl += trade.pnl;
+  }
+
+  return HOLD_BUCKET_ORDER.map((key) => {
+    const bucket = map.get(key)!;
+    return { ...bucket, winRate: bucket.trades > 0 ? bucket.wins / bucket.trades : 0 };
+  }).filter((bucket) => bucket.trades > 0);
+}
+
+/**
+ * Longest run of consecutive winning and losing trades in chronological order,
+ * plus the run currently in progress. Trade-level and sign-based (`pnl >= 0` =
+ * win, consistent with computeStreak/groupTradesByDay) — distinct from the
+ * calendar-day streak in computeMonthSummary.
+ */
+export function computeConsecutiveStreaks(trades: TradeDTO[]): ConsecutiveStreaks {
+  const sorted = [...trades].sort((a, b) => a.tradeDate.localeCompare(b.tradeDate));
+
+  let maxWins = 0;
+  let maxLosses = 0;
+  let runType: "win" | "loss" | null = null;
+  let runCount = 0;
+
+  for (const trade of sorted) {
+    const type: "win" | "loss" = trade.pnl >= 0 ? "win" : "loss";
+    if (type === runType) {
+      runCount += 1;
+    } else {
+      runType = type;
+      runCount = 1;
+    }
+    if (type === "win") maxWins = Math.max(maxWins, runCount);
+    else maxLosses = Math.max(maxLosses, runCount);
+  }
+
+  return { maxWins, maxLosses, current: runType === null ? null : { type: runType, count: runCount } };
 }

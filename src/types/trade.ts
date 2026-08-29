@@ -156,3 +156,82 @@ export interface MistakeCostRow {
   trades: number;
   totalPnl: number;
 }
+
+// One column of the achieved-R distribution histogram. `min`/`max` are the
+// half-open bucket bounds `(min, max]`; a null bound is an open end
+// (`min: null` = everything at or below `max`; `max: null` = above `min`).
+export interface RBucket {
+  key: string;
+  min: number | null;
+  max: number | null;
+  count: number;
+  totalPnl: number;
+}
+
+// Per-weekday row on the Analytics "performance by day of week" card.
+// `weekday` is Monday=0..Sunday=6 (matches the calendar grid).
+export interface DayOfWeekRow {
+  weekday: number;
+  trades: number;
+  wins: number;
+  winRate: number; // 0..1
+  totalPnl: number;
+}
+
+// Per-hour row on the Analytics "performance by hour" card. `hour` is the
+// trade's local wall-clock entry hour, 0..23.
+export interface HourOfDayRow {
+  hour: number;
+  trades: number;
+  wins: number;
+  winRate: number; // 0..1
+  totalPnl: number;
+}
+
+// Avg hold duration (minutes) for winning vs losing trades. Each side is null
+// independently when no trade on that side has a recorded exit time.
+export interface HoldTimeComparison {
+  avgWinnerMinutes: number | null;
+  avgLoserMinutes: number | null;
+}
+
+// One duration bucket on the Analytics hold-time card. `key` identifies the
+// range (`lt15`, `15to60`, `1to4h`, `4to24h`, `gt1d`); the label is derived
+// in the component.
+export interface HoldBucket {
+  key: string;
+  trades: number;
+  wins: number;
+  winRate: number; // 0..1
+  totalPnl: number;
+}
+
+// Per-symbol row on the Analytics "performance by symbol" card — same shape
+// as SetupBreakdownRow, keyed on the trade's symbol.
+export interface SymbolBreakdownRow {
+  symbol: string;
+  trades: number;
+  wins: number;
+  winRate: number; // 0..1
+  totalPnl: number;
+  expectancy: number; // avg pnl per trade, this symbol only
+}
+
+// Long vs short comparison row on the Analytics "performance by direction"
+// card. A side with zero trades is omitted by the breakdown function.
+export interface DirectionRow {
+  direction: "long" | "short";
+  trades: number;
+  wins: number;
+  winRate: number; // 0..1
+  totalPnl: number;
+  avgAchievedR: number | null;
+}
+
+// Trade-level win/loss streaks — distinct from the calendar-day streak in
+// MonthSummary. `current` is null only when there are no trades at all.
+export interface ConsecutiveStreaks {
+  maxWins: number;
+  maxLosses: number;
+  current: { type: "win" | "loss"; count: number } | null;
+}

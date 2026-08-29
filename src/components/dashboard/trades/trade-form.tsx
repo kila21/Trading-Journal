@@ -92,28 +92,49 @@ function hasStopLossWarning(direction: "long" | "short", entryPrice: string, sto
   return direction === "long" ? sl > entry : sl < entry;
 }
 
-/**
- * Exit time is only meaningful relative to entry time on the same calendar
- * day (see the exitDate construction in handleSubmit) — a non-blocking
- * warning, same treatment as the TP/SL warnings above.
- */
-function hasExitTimeWarning(entryTime: string, exitTime: string): boolean {
-  if (entryTime === "" || exitTime === "") return false;
-  return exitTime < entryTime;
+/** Combines a "YYYY-MM-DD" date-input value and an "HH:MM" time into a local Date. */
+function combineDateTime(dateInput: string, time: string): Date {
+  const [hours, minutes] = time.split(":").map(Number);
+  const date = parseDateInputValue(dateInput);
+  date.setHours(hours || 0, minutes || 0, 0, 0);
+  return date;
 }
 
 /**
- * Minutes between two "HH:MM" strings on the same calendar day, for the live
- * hold-duration readout while the form is still open (before there's a real
- * TradeDTO to run computeHoldDurationMinutes against). Null when either time
- * is missing or exit precedes entry — the warning above already covers that
- * case, this just avoids showing a nonsensical negative duration.
+ * Warn when the exit timestamp lands before the entry one. Exit can be its own
+ * calendar day now (swing holds); when only an exit time is given it falls
+ * back to the entry day. Non-blocking — same treatment as the TP/SL warnings.
  */
-function computeLiveHoldMinutes(entryTime: string, exitTime: string): number | null {
-  if (entryTime === "" || exitTime === "") return null;
-  const [entryHours, entryMinutes] = entryTime.split(":").map(Number);
-  const [exitHours, exitMinutes] = exitTime.split(":").map(Number);
-  const minutes = exitHours * 60 + exitMinutes - (entryHours * 60 + entryMinutes);
+function hasExitBeforeEntryWarning(
+  entryDateInput: string,
+  entryTime: string,
+  exitDateInput: string,
+  exitTime: string,
+): boolean {
+  if (entryDateInput === "" || entryTime === "") return false;
+  if (exitDateInput === "" && exitTime === "") return false;
+  const entry = combineDateTime(entryDateInput, entryTime);
+  const exit = combineDateTime(exitDateInput || entryDateInput, exitTime || "00:00");
+  return exit.getTime() < entry.getTime();
+}
+
+/**
+ * Minutes between entry and exit for the live hold-duration readout while the
+ * form is still open (before there's a real TradeDTO for
+ * computeHoldDurationMinutes). Null when a needed field is missing or exit
+ * precedes entry — the warning above covers that case, this just avoids a
+ * nonsensical negative duration.
+ */
+function computeLiveHoldMinutes(
+  entryDateInput: string,
+  entryTime: string,
+  exitDateInput: string,
+  exitTime: string,
+): number | null {
+  if (entryDateInput === "" || entryTime === "" || exitTime === "") return null;
+  const entry = combineDateTime(entryDateInput, entryTime);
+  const exit = combineDateTime(exitDateInput || entryDateInput, exitTime);
+  const minutes = Math.round((exit.getTime() - entry.getTime()) / 60000);
   return minutes >= 0 ? minutes : null;
 }
 
@@ -166,6 +187,7 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
       pnl: String(Math.abs(trade.pnl)),
       dateInput: toDateInputValue(new Date(trade.tradeDate)),
       time: toTimeInputValue(new Date(trade.tradeDate)),
+      exitDateInput: trade.exitDate ? toDateInputValue(new Date(trade.exitDate)) : "",
       exitTime: trade.exitDate ? toTimeInputValue(new Date(trade.exitDate)) : "",
       notes: trade.notes ?? "",
       setup: trade.setup ?? "",
@@ -188,6 +210,7 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
     pnl: "",
     dateInput: toDateInputValue(date),
     time: toTimeInputValue(new Date()),
+    exitDateInput: "",
     exitTime: "",
     notes: "",
     setup: "",
@@ -230,7 +253,12 @@ export function TradeForm({
 
   const takeProfitWarning = hasTakeProfitWarning(form.direction, form.entryPrice, form.takeProfit);
   const stopLossWarning = hasStopLossWarning(form.direction, form.entryPrice, form.stopLoss);
-  const exitTimeWarning = hasExitTimeWarning(form.time, form.exitTime);
+  const exitBeforeEntryWarning = hasExitBeforeEntryWarning(
+    form.dateInput,
+    form.time,
+    form.exitDateInput,
+    form.exitTime,
+  );
 
   const pnlSign = computePnlSign(form.direction, form.entryPrice, form.exitPrice);
   const pnlMagnitude = Number(form.pnl);
@@ -247,7 +275,7 @@ export function TradeForm({
       : null;
 
   const riskReward = computeRiskReward(form.entryPrice, form.stopLoss, form.takeProfit);
-  const liveHoldMinutes = computeLiveHoldMinutes(form.time, form.exitTime);
+  const liveHoldMinutes = computeLiveHoldMinutes(form.dateInput, form.time, form.exitDateInput, form.exitTime);
   const selectedSetup = setups.find((s) => s.name === form.setup) ?? null;
   const belowMinRWarning =
     selectedSetup?.minR != null && riskReward !== null && riskReward.plannedR < selectedSetup.minR;
@@ -293,14 +321,14 @@ export function TradeForm({
     const tradeDate = parseDateInputValue(form.dateInput);
     tradeDate.setHours(hours || 0, minutes || 0, 0, 0);
 
-    // exitTime shares the same calendar day as the entry — cross-day holds
-    // aren't representable yet, tracked as a known limitation.
+    // Exit can be its own calendar day (swing/overnight holds). When only a
+    // time is given, the exit date falls back to the entry day.
     let exitDate: string | null = null;
-    if (form.exitTime !== "") {
-      const [exitHours, exitMinutes] = form.exitTime.split(":").map(Number);
-      const exit = parseDateInputValue(form.dateInput);
-      exit.setHours(exitHours || 0, exitMinutes || 0, 0, 0);
-      exitDate = exit.toISOString();
+    if (form.exitTime !== "" || form.exitDateInput !== "") {
+      exitDate = combineDateTime(
+        form.exitDateInput || form.dateInput,
+        form.exitTime || "00:00",
+      ).toISOString();
     }
 
     const payload = {
@@ -354,7 +382,10 @@ export function TradeForm({
     let failedUploadCount = 0;
     let totalUploadCount = 0;
 
-    if (isCreating && pendingImages.length > 0) {
+    // Not gated on `isCreating`: after a partial upload failure the trade now
+    // exists (createdTrade is set), so a second Save comes through here as an
+    // edit — it still needs to retry the leftover images against savedTrade.id.
+    if (pendingImages.length > 0 && savedTrade) {
       totalUploadCount = pendingImages.length;
       const results = await Promise.allSettled(
         pendingImages.map(async (entry) => {
@@ -372,7 +403,9 @@ export function TradeForm({
         }),
       );
       failedUploadCount = results.filter((result) => result.status === "rejected").length;
-      setPendingImages([]);
+      // Keep only the entries that failed, so the retry re-uploads just those
+      // and doesn't duplicate the ones that already went through.
+      setPendingImages(pendingImages.filter((_, index) => results[index].status === "rejected"));
     }
 
     setPending(false);
@@ -600,8 +633,8 @@ export function TradeForm({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="dateInput">{t("tradeDateLabel")}</Label>
               <Input
@@ -617,12 +650,25 @@ export function TradeForm({
               <Label htmlFor="time">{t("entryTimeLabel")}</Label>
               <Input id="time" name="time" type="time" required value={form.time} onChange={handleChange} />
             </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="exitDateInput">{t("exitDateLabel")}</Label>
+              <Input
+                id="exitDateInput"
+                name="exitDateInput"
+                type="date"
+                min={form.dateInput || undefined}
+                value={form.exitDateInput}
+                onChange={handleChange}
+              />
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="exitTime">{t("exitTimeLabel")}</Label>
               <Input id="exitTime" name="exitTime" type="time" value={form.exitTime} onChange={handleChange} />
-              {exitTimeWarning && <p className="text-xs text-warning">{t("exitTimeWarning")}</p>}
             </div>
           </div>
+          {exitBeforeEntryWarning && <p className="text-xs text-warning">{t("exitTimeWarning")}</p>}
           {form.time !== "" && (
             <div className="flex items-center justify-between">
               {liveSession ? (
@@ -725,7 +771,7 @@ export function TradeForm({
           </button>
           {imagesOpen && (
             <div className="rounded-b-lg border border-t-0 border-border bg-background/20 p-4">
-              {effectiveTrade ? (
+              {effectiveTrade && pendingImages.length === 0 ? (
                 <TradeImageManager tradeId={effectiveTrade.id} />
               ) : (
                 <PendingImageManager

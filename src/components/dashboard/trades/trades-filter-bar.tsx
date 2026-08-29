@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ToggleChipGroup } from "@/components/ui/toggle-chip-group";
@@ -47,6 +48,8 @@ export function TradesFilterBar({
 }) {
   const t = useTranslations("dashboard");
   const { setups } = useSetups();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const counts = useMemo(() => computeFilterOptionCounts(trades, filters), [trades, filters]);
 
   const symbolOptions: MultiSelectOption<string>[] = useMemo(() => {
@@ -139,6 +142,7 @@ export function TradesFilterBar({
   }, [filters, t]);
 
   const hasActiveFilters = activeChips.length > 0 || filters.search.trim() !== "";
+  const showFilterControls = isDesktop || filtersOpen;
 
   return (
     <div className="space-y-4">
@@ -171,6 +175,13 @@ export function TradesFilterBar({
             className="pl-9"
           />
         </div>
+        {!isDesktop && (
+          <Button type="button" variant="outline" onClick={() => setFiltersOpen((open) => !open)}>
+            {activeChips.length > 0
+              ? t("filtersButtonCount", { count: activeChips.length })
+              : t("filtersButton")}
+          </Button>
+        )}
         <Button type="button" variant="outline" onClick={onExport}>
           {t("exportCsv")}
         </Button>
@@ -179,6 +190,7 @@ export function TradesFilterBar({
         </Button>
       </div>
 
+      {showFilterControls && (
       <div className="flex flex-wrap items-center gap-2">
         <SearchableMultiSelectPopover
           label={t("setupLabel")}
@@ -244,6 +256,7 @@ export function TradesFilterBar({
           </button>
         )}
       </div>
+      )}
 
       {activeChips.length > 0 && (
         <div className="flex flex-wrap gap-2">

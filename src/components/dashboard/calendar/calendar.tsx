@@ -96,7 +96,7 @@ export function Calendar({
                   );
                 })}
               </div>
-              <WeekSummaryBar summary={weekSummary} />
+              <WeekSummaryBar summary={weekSummary} className="hidden lg:flex" />
             </div>
           );
         })}

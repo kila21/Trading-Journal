@@ -86,6 +86,10 @@ export function validateTradeInput(body: unknown): ValidationResult {
     if (typeof exitDate !== "string" || Number.isNaN(Date.parse(exitDate))) {
       return { ok: false, error: "Exit date is invalid." };
     }
+    // Exit may fall on a later day than entry (swing holds) but never earlier.
+    if (typeof tradeDate === "string" && Date.parse(exitDate) < Date.parse(tradeDate)) {
+      return { ok: false, error: "Exit date can't be before the entry date." };
+    }
   }
   // Not validated against a fixed vocabulary or a real Setup row on
   // purpose — setup is a soft reference by name (see prisma/schema.prisma),

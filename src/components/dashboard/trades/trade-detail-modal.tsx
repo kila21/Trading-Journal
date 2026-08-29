@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { formatFullDate, toLocale } from "@/components/dashboard/calendar/format-date";
+import { formatFullDate, formatShortDate, toLocale } from "@/components/dashboard/calendar/format-date";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { cn } from "@/lib/utils";
 import { TradeImageGallery } from "./trade-image-gallery";
@@ -24,6 +24,12 @@ import type { TradeDTO } from "@/types/trade";
 // hydration mismatch documented in format-date.ts/format-pnl.ts.
 function formatTime(date: Date): string {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  );
 }
 
 export function TradeDetailModal({
@@ -87,7 +93,14 @@ export function TradeDetailModal({
         {trade.stopLoss !== null && <SummaryItem label={t("stopLossLabel")} value={trade.stopLoss} />}
         <TextSummaryItem label={t("entryTimeLabel")} value={formatTime(new Date(trade.tradeDate))} />
         {trade.exitDate !== null && (
-          <TextSummaryItem label={t("exitTimeLabel")} value={formatTime(new Date(trade.exitDate))} />
+          <TextSummaryItem
+            label={t("exitTimeLabel")}
+            value={
+              isSameDay(new Date(trade.tradeDate), new Date(trade.exitDate))
+                ? formatTime(new Date(trade.exitDate))
+                : `${formatShortDate(new Date(trade.exitDate), locale)}, ${formatTime(new Date(trade.exitDate))}`
+            }
+          />
         )}
         {holdDurationMinutes !== null && (
           <TextSummaryItem label={t("holdDurationLabel")} value={formatDuration(holdDurationMinutes)} />

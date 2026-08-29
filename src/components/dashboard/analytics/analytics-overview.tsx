@@ -19,12 +19,21 @@ import {
   computeNetPnlAfterFees,
   hasAnyCommission,
   computeAverageRiskPercent,
+  computeRMultipleDistribution,
+  computeExpectancyR,
+  computeHoldTimeComparison,
+  computeHoldTimeBuckets,
+  computeConsecutiveStreaks,
 } from "@/components/dashboard/trades/trade-stats";
 import {
   computeSetupBreakdown,
   computeSessionBreakdown,
   computeMistakeCostBreakdown,
   computeFollowedPlanComparison,
+  computeSymbolBreakdown,
+  computeDirectionBreakdown,
+  computeDayOfWeekBreakdown,
+  computeHourOfDayBreakdown,
 } from "@/components/dashboard/trades/trade-breakdown-stats";
 import { AnalyticsRangeTabs } from "./analytics-range-tabs";
 import { PlannedVsAchievedCard } from "./planned-vs-achieved-card";
@@ -32,6 +41,13 @@ import { SetupPerformanceCard } from "./setup-performance-card";
 import { SessionPerformanceCard } from "./session-performance-card";
 import { DisciplineCard } from "./discipline-card";
 import { WinsVsLossesCard } from "./wins-vs-losses-card";
+import { RDistributionCard } from "./r-distribution-card";
+import { DayOfWeekCard } from "./day-of-week-card";
+import { HourOfDayCard } from "./hour-of-day-card";
+import { HoldTimeCard } from "./hold-time-card";
+import { SymbolPerformanceCard } from "./symbol-performance-card";
+import { DirectionPerformanceCard } from "./direction-performance-card";
+import { StreaksCard } from "./streaks-card";
 
 const LOW_SAMPLE_THRESHOLD = 10;
 
@@ -77,6 +93,15 @@ export function AnalyticsOverview() {
   const winLossBreakdown = useMemo(() => computeWinLossBreakdown(trades), [trades]);
   const setupBreakdown = useMemo(() => computeSetupBreakdown(trades), [trades]);
   const sessionBreakdown = useMemo(() => computeSessionBreakdown(trades), [trades]);
+  const rDistribution = useMemo(() => computeRMultipleDistribution(trades), [trades]);
+  const expectancyR = useMemo(() => computeExpectancyR(trades), [trades]);
+  const holdComparison = useMemo(() => computeHoldTimeComparison(trades), [trades]);
+  const holdBuckets = useMemo(() => computeHoldTimeBuckets(trades), [trades]);
+  const streaks = useMemo(() => computeConsecutiveStreaks(trades), [trades]);
+  const symbolBreakdown = useMemo(() => computeSymbolBreakdown(trades), [trades]);
+  const directionBreakdown = useMemo(() => computeDirectionBreakdown(trades), [trades]);
+  const dayOfWeekBreakdown = useMemo(() => computeDayOfWeekBreakdown(trades), [trades]);
+  const hourOfDayBreakdown = useMemo(() => computeHourOfDayBreakdown(trades), [trades]);
 
   if (error) {
     return (
@@ -141,13 +166,27 @@ export function AnalyticsOverview() {
 
       <PlannedVsAchievedCard avgPlannedR={avgPlannedR} avgAchievedR={avgAchievedR} />
 
+      <RDistributionCard buckets={rDistribution} expectancyR={expectancyR} tradeCount={trades.length} />
+
+      <StreaksCard streaks={streaks} />
+
       <DisciplineCard planComparison={planComparison} mistakeCosts={mistakeCosts} />
 
       <WinsVsLossesCard breakdown={winLossBreakdown} />
 
+      <HoldTimeCard comparison={holdComparison} buckets={holdBuckets} />
+
       <SessionPerformanceCard rows={sessionBreakdown} />
 
       <SetupPerformanceCard rows={setupBreakdown} />
+
+      <SymbolPerformanceCard rows={symbolBreakdown} />
+
+      <DirectionPerformanceCard rows={directionBreakdown} />
+
+      <DayOfWeekCard rows={dayOfWeekBreakdown} />
+
+      <HourOfDayCard rows={hourOfDayBreakdown} />
     </div>
   );
 }

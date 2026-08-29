@@ -1,6 +1,6 @@
-// Multi-trade breakdowns for the Analytics page — grouping by setup, by
-// session, by mistake tag, and by plan adherence. Distinct from
-// trade-stats.ts, which aggregates by calendar day/month for the Overview
+// Multi-trade breakdowns for the Analytics page — grouping by setup, session,
+// symbol, direction, weekday, hour, mistake tag, and plan adherence. Distinct
+// from trade-stats.ts, which aggregates by calendar day/month for the Overview
 // page.
 import { tradeMistakeTags } from "@/config/trade-mistake-tags";
 import { computeAchievedR } from "./trade-stats";
@@ -11,6 +11,10 @@ import type {
   SessionBreakdownRow,
   FollowedPlanComparison,
   MistakeCostRow,
+  SymbolBreakdownRow,
+  DirectionRow,
+  DayOfWeekRow,
+  HourOfDayRow,
 } from "@/types/trade";
 
 function averageAchievedR(trades: TradeDTO[]): number | null {
@@ -120,4 +124,113 @@ export function computeMistakeCostBreakdown(trades: TradeDTO[]): MistakeCostRow[
     .filter((row) => row.trades > 0);
 
   return rows.sort((a, b) => a.totalPnl - b.totalPnl);
+}
+
+/**
+ * Win rate + expectancy + total P&L per symbol — same shape as the setup
+ * breakdown but every trade has a symbol, so nothing is dropped. Sorted by
+ * total P&L descending.
+ */
+export function computeSymbolBreakdown(trades: TradeDTO[]): SymbolBreakdownRow[] {
+  const bySymbol = new Map<string, TradeDTO[]>();
+  for (const trade of trades) {
+    const existing = bySymbol.get(trade.symbol) ?? [];
+    existing.push(trade);
+    bySymbol.set(trade.symbol, existing);
+  }
+
+  const rows: SymbolBreakdownRow[] = Array.from(bySymbol.entries()).map(([symbol, symbolTrades]) => {
+    const wins = symbolTrades.filter((t) => t.pnl >= 0).length;
+    const totalPnl = symbolTrades.reduce((sum, t) => sum + t.pnl, 0);
+    return {
+      symbol,
+      trades: symbolTrades.length,
+      wins,
+      winRate: wins / symbolTrades.length,
+      totalPnl,
+      expectancy: totalPnl / symbolTrades.length,
+    };
+  });
+
+  return rows.sort((a, b) => b.totalPnl - a.totalPnl);
+}
+
+/**
+ * Long vs short: win rate, total P&L, and average achieved R for each
+ * direction. A direction with no trades is omitted. Sorted by total P&L
+ * descending.
+ */
+export function computeDirectionBreakdown(trades: TradeDTO[]): DirectionRow[] {
+  const rows: DirectionRow[] = (["long", "short"] as const)
+    .map((direction) => {
+      const directionTrades = trades.filter((t) => t.direction === direction);
+      const wins = directionTrades.filter((t) => t.pnl >= 0).length;
+      return {
+        direction,
+        trades: directionTrades.length,
+        wins,
+        winRate: directionTrades.length > 0 ? wins / directionTrades.length : 0,
+        totalPnl: directionTrades.reduce((sum, t) => sum + t.pnl, 0),
+        avgAchievedR: averageAchievedR(directionTrades),
+      };
+    })
+    .filter((row) => row.trades > 0);
+
+  return rows.sort((a, b) => b.totalPnl - a.totalPnl);
+}
+
+/**
+ * Win rate + total P&L per weekday, Monday=0..Sunday=6 (matches the calendar
+ * grid). Uses the trade's local wall-clock day as entered — deliberately not
+ * NY/exchange time like getTradingSession, since this is about the trader's
+ * own weekly rhythm. Only weekdays with trades appear; sorted Mon→Sun.
+ */
+export function computeDayOfWeekBreakdown(trades: TradeDTO[]): DayOfWeekRow[] {
+  const byWeekday = new Map<number, TradeDTO[]>();
+  for (const trade of trades) {
+    const weekday = (new Date(trade.tradeDate).getDay() + 6) % 7;
+    const existing = byWeekday.get(weekday) ?? [];
+    existing.push(trade);
+    byWeekday.set(weekday, existing);
+  }
+
+  const rows: DayOfWeekRow[] = Array.from(byWeekday.entries()).map(([weekday, dayTrades]) => {
+    const wins = dayTrades.filter((t) => t.pnl >= 0).length;
+    return {
+      weekday,
+      trades: dayTrades.length,
+      wins,
+      winRate: wins / dayTrades.length,
+      totalPnl: dayTrades.reduce((sum, t) => sum + t.pnl, 0),
+    };
+  });
+
+  return rows.sort((a, b) => a.weekday - b.weekday);
+}
+
+/**
+ * Win rate + total P&L per entry hour (local wall-clock, 0..23). Only hours
+ * with trades appear; sorted earliest→latest.
+ */
+export function computeHourOfDayBreakdown(trades: TradeDTO[]): HourOfDayRow[] {
+  const byHour = new Map<number, TradeDTO[]>();
+  for (const trade of trades) {
+    const hour = new Date(trade.tradeDate).getHours();
+    const existing = byHour.get(hour) ?? [];
+    existing.push(trade);
+    byHour.set(hour, existing);
+  }
+
+  const rows: HourOfDayRow[] = Array.from(byHour.entries()).map(([hour, hourTrades]) => {
+    const wins = hourTrades.filter((t) => t.pnl >= 0).length;
+    return {
+      hour,
+      trades: hourTrades.length,
+      wins,
+      winRate: wins / hourTrades.length,
+      totalPnl: hourTrades.reduce((sum, t) => sum + t.pnl, 0),
+    };
+  });
+
+  return rows.sort((a, b) => a.hour - b.hour);
 }

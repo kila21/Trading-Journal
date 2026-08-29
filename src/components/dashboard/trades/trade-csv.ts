@@ -8,6 +8,7 @@ import type { TradeDTO } from "@/types/trade";
 
 const CSV_HEADERS = [
   "Date",
+  "Exit Date",
   "Symbol",
   "Direction",
   "Entry Price",
@@ -38,6 +39,7 @@ export function tradesToCsv(trades: TradeDTO[]): string {
 
     return [
       trade.tradeDate,
+      trade.exitDate ?? "",
       trade.symbol,
       trade.direction,
       trade.entryPrice,

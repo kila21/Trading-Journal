@@ -7,7 +7,9 @@ import { applyTradeFilters, computeTradesSummary, defaultTradeFilters, sortTrade
 import type { TradeFilters, TradeSortField, TradeSortDirection } from "./trade-filters";
 import { TradesFilterBar } from "./trades-filter-bar";
 import { TradesTable } from "./trades-table";
+import { TradesCardList } from "./trades-card-list";
 import { TradesTableSkeleton } from "./trades-table-skeleton";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { TradesEmptyState } from "./trades-empty-state";
 import { TradeFormModal } from "./trade-form-modal";
 import { TradeDetailModal } from "./trade-detail-modal";
@@ -17,6 +19,7 @@ import type { TradeDTO } from "@/types/trade";
 
 export function TradesOverview() {
   const t = useTranslations("dashboard");
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [range, setRange] = useState<AnalyticsRange>("all");
   const [filters, setFilters] = useState<TradeFilters>(defaultTradeFilters);
   const [sortField, setSortField] = useState<TradeSortField>("tradeDate");
@@ -45,6 +48,11 @@ export function TradesOverview() {
       setSortField(field);
       setSortDirection("desc");
     }
+  }
+
+  function handleSortChange(field: TradeSortField, direction: TradeSortDirection) {
+    setSortField(field);
+    setSortDirection(direction);
   }
 
   function handleAddTrade() {
@@ -97,13 +105,22 @@ export function TradesOverview() {
         <TradesTableSkeleton />
       ) : sortedTrades.length === 0 ? (
         <TradesEmptyState trades={trades} filters={filters} onChange={setFilters} />
-      ) : (
+      ) : isDesktop ? (
         <TradesTable
           trades={sortedTrades}
           summary={summary}
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={handleSort}
+          onRowClick={handleRowClick}
+        />
+      ) : (
+        <TradesCardList
+          trades={sortedTrades}
+          summary={summary}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSortChange={handleSortChange}
           onRowClick={handleRowClick}
         />
       )}

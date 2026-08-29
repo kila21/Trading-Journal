@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { XIcon } from "@/components/dashboard/icons";
+import { XIcon, ChevronRightIcon } from "@/components/dashboard/icons";
 import { cn } from "@/lib/utils";
 import { useTradeImages } from "./use-trade-images";
 import { AddTimeframeSection } from "./trade-image-manager";
@@ -17,19 +17,26 @@ import type { TradeImageDTO } from "@/types/trade";
  */
 export function TradeImageGallery({ tradeId }: { tradeId: string }) {
   const { images, refetch } = useTradeImages(tradeId);
-  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   return (
     <div>
       <div className="space-y-4">
-        {images.map((image) => (
-          <GallerySection key={image.id} image={image} onExpand={() => setLightboxUrl(image.url)} />
+        {images.map((image, index) => (
+          <GallerySection key={image.id} image={image} onExpand={() => setLightboxIndex(index)} />
         ))}
       </div>
 
       <AddTimeframeSection tradeId={tradeId} onAdded={refetch} />
 
-      {lightboxUrl && <ImageLightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+      {lightboxIndex !== null && images[lightboxIndex] && (
+        <ImageLightbox
+          images={images}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 }
@@ -56,16 +63,32 @@ function GallerySection({ image, onExpand }: { image: TradeImageDTO; onExpand: (
   );
 }
 
-function ImageLightbox({ url, onClose }: { url: string; onClose: () => void }) {
+function ImageLightbox({
+  images,
+  index,
+  onIndexChange,
+  onClose,
+}: {
+  images: TradeImageDTO[];
+  index: number;
+  onIndexChange: (index: number) => void;
+  onClose: () => void;
+}) {
   const t = useTranslations("dashboard");
+  const hasPrev = index > 0;
+  const hasNext = index < images.length - 1;
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
+      if (event.key === "ArrowLeft" && index > 0) onIndexChange(index - 1);
+      if (event.key === "ArrowRight" && index < images.length - 1) onIndexChange(index + 1);
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [index, images.length, onClose, onIndexChange]);
+
+  const image = images[index];
 
   return (
     <div
@@ -76,11 +99,45 @@ function ImageLightbox({ url, onClose }: { url: string; onClose: () => void }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- same-origin uploaded content, not a static asset */}
       <img
-        src={url}
-        alt=""
+        src={image.url}
+        alt={image.caption ?? ""}
         className="max-h-full max-w-full object-contain"
         onClick={(event) => event.stopPropagation()}
       />
+
+      {hasPrev && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onIndexChange(index - 1);
+          }}
+          aria-label={t("prevImage")}
+          className="absolute left-6 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/80 text-foreground hover:bg-surface"
+        >
+          <ChevronRightIcon className="size-5 rotate-180" />
+        </button>
+      )}
+      {hasNext && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onIndexChange(index + 1);
+          }}
+          aria-label={t("nextImage")}
+          className="absolute right-6 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-surface/80 text-foreground hover:bg-surface"
+        >
+          <ChevronRightIcon className="size-5" />
+        </button>
+      )}
+
+      {images.length > 1 && (
+        <span className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-surface/80 px-3 py-1 text-xs font-medium text-foreground">
+          {t("imageCounter", { current: index + 1, total: images.length })}
+        </span>
+      )}
+
       <button
         type="button"
         onClick={onClose}
