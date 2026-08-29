@@ -11,17 +11,28 @@ trading discipline.
 - **Register / log in** with an email and password, and change your password any
   time from the account menu.
 - **Log trades** — symbol, direction, entry/exit price, take profit, stop loss,
-  contracts, and trading session (Asian, London, NY AM/Lunch/PM) — with P&L
-  calculated automatically.
+  contracts, contract type (E-mini / Micro), trading session, plus how you felt
+  and any mistakes. P&L and dollar risk are derived from the prices, contract
+  count, and the instrument's point value — no need to type them.
+- **Log multi-day (swing) holds** — the exit can fall on a later day than the entry.
 - **See a month at a glance** on a color-coded calendar (green/red by daily P&L),
-  with best day, worst day, and current win/loss streak surfaced automatically.
+  with an agenda list and equity-curve view, and best day / worst day / current
+  streak surfaced automatically.
 - **Browse and filter your full trade history** on a dedicated Trades page —
   search by symbol/notes, filter by setup, session, symbol, direction, mistake
-  tags, plan adherence, and outcome, with live per-option counts.
-- **Track performance on the Analytics page** — win rate and P&L by setup and
-  session, planned-vs-achieved R, discipline/cost-by-mistake, and wins vs losses.
-- **Attach chart screenshots** to a trade, organized per timeframe, so a trade's
-  setup and execution stay side by side with the numbers.
+  tags, emotions, plan adherence, and outcome, with live per-option counts.
+  Export to CSV.
+- **Build a playbook** — define your setups with entry conditions, min R, and
+  target sessions, then see win rate, expectancy, and per-condition compliance
+  for each one.
+- **Track performance on the Analytics page** — win rate and P&L by setup,
+  session, symbol, direction, day of week, and hour; R-multiple distribution;
+  hold-time buckets; planned-vs-achieved R; cost by mistake; performance by
+  emotion; and consecutive-trade streaks — over the last month, 90 days, YTD,
+  or all time.
+- **Attach chart screenshots** to a trade, organized per timeframe (paste,
+  drag-and-drop, or pick a file), so a trade's setup and execution stay side by
+  side with the numbers.
 - **Use it in English or Georgian (ქართული)** — every page is fully translated.
 
 ## Stack
@@ -46,27 +57,27 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) — it redirects to `/en` (or `/ka`
-based on your browser language).
-
-The `postinstall` script runs `prisma generate` automatically. If you ever change
-`prisma/schema.prisma`, run:
-
-```bash
-npm run db:migrate
-```
+based on your browser language). The `postinstall` script runs `prisma generate`
+automatically.
 
 ## Scripts
 
-| Command              | Description                          |
-| --------------------- | ------------------------------------- |
-| `npm run dev`         | Start the dev server                  |
-| `npm run build`        | Production build                      |
-| `npm run start`        | Run the production build              |
-| `npm run lint`         | Check code style                      |
-| `npm run lint:fix`      | Fix code style issues                  |
-| `npm run typecheck`     | Check TypeScript types                 |
-| `npm run db:migrate`    | Apply a Prisma migration               |
-| `npm run db:studio`     | Browse the local database in a GUI      |
+| Command               | Description                                          |
+| --------------------- | --------------------------------------------------- |
+| `npm run dev`         | Start the dev server                                |
+| `npm run build`       | Production build                                    |
+| `npm run start`       | Run the production build                            |
+| `npm run lint`        | Check code style                                    |
+| `npm run lint:fix`    | Fix code style issues                               |
+| `npm run typecheck`   | Check TypeScript types                              |
+| `npm run db:generate` | Regenerate the Prisma client                        |
+| `npm run db:migrate`  | Create and apply a Prisma migration (dev)           |
+| `npm run db:studio`   | Browse the database in a GUI                         |
+| `npm run build:netlify` | `prisma migrate deploy && next build` (deploy only) |
+
+If you change `prisma/schema.prisma`, run `npm run db:migrate` and then **restart
+the dev server** — the Prisma client is cached in memory and won't pick up new
+columns otherwise.
 
 ## Roadmap
 
