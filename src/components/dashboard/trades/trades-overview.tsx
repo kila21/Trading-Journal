@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useTradesRange, type AnalyticsRange } from "./use-trades-range";
 import { applyTradeFilters, computeTradesSummary, defaultTradeFilters, sortTrades } from "./trade-filters";
 import type { TradeFilters, TradeSortField, TradeSortDirection } from "./trade-filters";
@@ -11,14 +12,13 @@ import { TradesCardList } from "./trades-card-list";
 import { TradesTableSkeleton } from "./trades-table-skeleton";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { TradesEmptyState } from "./trades-empty-state";
-import { TradeFormModal } from "./trade-form-modal";
-import { TradeDetailModal } from "./trade-detail-modal";
 import { tradesToCsv } from "./trade-csv";
 import { ErrorState } from "@/components/ui/error-state";
 import type { TradeDTO } from "@/types/trade";
 
 export function TradesOverview() {
   const t = useTranslations("dashboard");
+  const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [range, setRange] = useState<AnalyticsRange>("all");
   const [filters, setFilters] = useState<TradeFilters>(defaultTradeFilters);
@@ -29,10 +29,6 @@ export function TradesOverview() {
   // Derived without an effect so a range change never re-shows the full skeleton.
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   if (!isLoading && !hasLoadedOnce) setHasLoadedOnce(true);
-
-  const [modal, setModal] = useState<"form" | "detail" | null>(null);
-  const [editingTrade, setEditingTrade] = useState<TradeDTO | undefined>(undefined);
-  const [detailTrade, setDetailTrade] = useState<TradeDTO | undefined>(undefined);
 
   const filteredTrades = useMemo(() => applyTradeFilters(trades, filters), [trades, filters]);
   const sortedTrades = useMemo(
@@ -56,24 +52,11 @@ export function TradesOverview() {
   }
 
   function handleAddTrade() {
-    setEditingTrade(undefined);
-    setModal("form");
-  }
-
-  function handleEditTrade(trade: TradeDTO) {
-    setEditingTrade(trade);
-    setModal("form");
+    router.push("/dashboard/trades/new");
   }
 
   function handleRowClick(trade: TradeDTO) {
-    setDetailTrade(trade);
-    setModal("detail");
-  }
-
-  function handleCloseModal() {
-    setModal(null);
-    setEditingTrade(undefined);
-    setDetailTrade(undefined);
+    router.push(`/dashboard/trades/${trade.id}`);
   }
 
   function handleExport() {
@@ -122,17 +105,6 @@ export function TradesOverview() {
           sortDirection={sortDirection}
           onSortChange={handleSortChange}
           onRowClick={handleRowClick}
-        />
-      )}
-
-      {modal === "form" && (
-        <TradeFormModal date={new Date()} trade={editingTrade} onClose={handleCloseModal} onSaved={refetch} />
-      )}
-      {modal === "detail" && detailTrade && (
-        <TradeDetailModal
-          trade={detailTrade}
-          onClose={handleCloseModal}
-          onEdit={() => handleEditTrade(detailTrade)}
         />
       )}
     </div>

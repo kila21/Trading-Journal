@@ -1,8 +1,9 @@
 // Multi-trade breakdowns for the Analytics page — grouping by setup, session,
-// symbol, direction, weekday, hour, mistake tag, and plan adherence. Distinct
-// from trade-stats.ts, which aggregates by calendar day/month for the Overview
-// page.
+// symbol, direction, weekday, hour, mistake tag, emotion, and plan adherence.
+// Distinct from trade-stats.ts, which aggregates by calendar day/month for the
+// Overview page.
 import { tradeMistakeTags } from "@/config/trade-mistake-tags";
+import { tradeEmotions } from "@/config/trade-emotions";
 import { computeAchievedR } from "./trade-stats";
 import { getTradingSession } from "./trading-session";
 import type {
@@ -15,6 +16,7 @@ import type {
   DirectionRow,
   DayOfWeekRow,
   HourOfDayRow,
+  EmotionBreakdownRow,
 } from "@/types/trade";
 
 function averageAchievedR(trades: TradeDTO[]): number | null {
@@ -124,6 +126,30 @@ export function computeMistakeCostBreakdown(trades: TradeDTO[]): MistakeCostRow[
     .filter((row) => row.trades > 0);
 
   return rows.sort((a, b) => a.totalPnl - b.totalPnl);
+}
+
+/**
+ * Win rate + total P&L per logged emotion. A trade tagged with several
+ * emotions contributes to each row (not a mutually exclusive partition).
+ * Only emotions with at least one trade appear; sorted by total P&L
+ * descending (best-feeling states first).
+ */
+export function computeEmotionBreakdown(trades: TradeDTO[]): EmotionBreakdownRow[] {
+  const rows: EmotionBreakdownRow[] = tradeEmotions
+    .map((emotion) => {
+      const tagged = trades.filter((t) => (t.emotions ?? []).includes(emotion));
+      const wins = tagged.filter((t) => t.pnl >= 0).length;
+      return {
+        emotion,
+        trades: tagged.length,
+        wins,
+        winRate: tagged.length > 0 ? wins / tagged.length : 0,
+        totalPnl: tagged.reduce((sum, t) => sum + t.pnl, 0),
+      };
+    })
+    .filter((row) => row.trades > 0);
+
+  return rows.sort((a, b) => b.totalPnl - a.totalPnl);
 }
 
 /**

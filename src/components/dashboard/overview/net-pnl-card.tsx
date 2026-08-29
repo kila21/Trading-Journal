@@ -22,13 +22,11 @@ export function NetPnlCard({
   const monthYearLabel = formatMonthYear(new Date(year, month, 1), locale);
 
   let total = 0;
-  let commission = 0;
   let trades = 0;
   let wins = 0;
 
   for (const day of dailyStats.values()) {
     total += day.pnl;
-    commission += day.commission;
     trades += day.trades;
     wins += day.wins;
   }
@@ -61,11 +59,6 @@ export function NetPnlCard({
           >
             {formatted}
           </p>
-          {commission > 0 && (
-            <p className="mt-0.5 text-xs text-muted">
-              {t("netAfterFees", { amount: formatPnl(total - commission) })}
-            </p>
-          )}
         </div>
       </div>
       <div className="text-right">

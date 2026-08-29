@@ -77,5 +77,9 @@ npm run db:migrate
 - [x] Hosted deployment (Netlify + Neon Postgres + Netlify Blobs)
 - [x] Analytics page
 - [x] Trades page — full trade log with search and filters
+- [x] Deeper analytics — R distribution, day/hour/hold-time/symbol/direction breakdowns, streaks
+- [x] Multi-day (swing) holds
+- [x] Dedicated trade pages (new / detail / edit) instead of modals
+- [x] Per-instrument contract sizing — derived P&L and dollar risk from point values
 - [ ] Brokerage account model
 - [ ] Email verification

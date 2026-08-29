@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { TradeDTO } from "@/types/trade";
+import { normalizeTrades } from "./normalize-trade";
 
 export type AnalyticsRange = "month" | "90d" | "ytd" | "all";
 
@@ -21,7 +22,7 @@ export function useTradesRange(range: AnalyticsRange) {
       .then((response) => response.json().then((body) => ({ ok: response.ok, body })))
       .then(({ ok, body }) => {
         if (cancelled) return;
-        setTrades(ok ? (body.trades as TradeDTO[]) : []);
+        setTrades(ok ? normalizeTrades(body.trades) : []);
         setError(!ok);
         setLoadedKey(key);
       })

@@ -1,5 +1,6 @@
 import type { TradeTimeframe } from "@/config/trade-timeframes";
 import type { TradeMistakeTag } from "@/config/trade-mistake-tags";
+import type { TradeEmotion } from "@/config/trade-emotions";
 import type { SessionName } from "@/types/trading-session";
 
 // Shape of a trade as returned by /api/trades (JSON — tradeDate is a string,
@@ -19,14 +20,15 @@ export interface TradeDTO {
   notes: string | null;
   setup: string | null;
   mistakeTags: TradeMistakeTag[];
+  emotions: TradeEmotion[];
   followedPlan: boolean | null;
   checkedConditions: string[];
-  // Optional fee/commission in dollars — separate from `pnl`, which stays
-  // exactly as manually entered (see prisma/schema.prisma's Trade.commission).
-  commission: number | null;
   // Optional dollar amount manually entered as "at risk" on this trade (see
   // prisma/schema.prisma's Trade.riskAmount for why this isn't auto-derived).
   riskAmount: number | null;
+  // Contract-type key into src/config/instrument-specs.ts ("emini" | "micro" |
+  // "standard"). Resolves the dollar point value for P&L / risk math.
+  contractSize: string | null;
 }
 
 // Server-side validated shape for creating/updating a trade (same fields as
@@ -45,10 +47,11 @@ export interface TradeInput {
   notes: string | null;
   setup: string | null;
   mistakeTags: TradeMistakeTag[];
+  emotions: TradeEmotion[];
   followedPlan: boolean | null;
   checkedConditions: string[];
-  commission: number | null;
   riskAmount: number | null;
+  contractSize: string | null;
 }
 
 export interface TradeImageDTO {
@@ -70,8 +73,6 @@ export interface PendingImageEntry {
 
 export interface DailyStats {
   pnl: number;
-  // Sum of each trade's optional commission that day — 0 when none set.
-  commission: number;
   trades: number;
   wins: number;
   // ISO timestamp of the earliest trade opened that day — used to resolve
@@ -154,6 +155,16 @@ export interface WinLossBreakdown {
 export interface MistakeCostRow {
   tag: TradeMistakeTag;
   trades: number;
+  totalPnl: number;
+}
+
+// Per-emotion row on the Analytics "performance by emotion" card. A trade with
+// several emotions contributes to each of its rows.
+export interface EmotionBreakdownRow {
+  emotion: TradeEmotion;
+  trades: number;
+  wins: number;
+  winRate: number; // 0..1
   totalPnl: number;
 }
 

@@ -29,7 +29,7 @@ codebase.)
 | `src/components/ui/` | Generic, copy-free primitives (Button, Card, Dialog, Accordion...) shared by landing and dashboard. |
 | `src/components/landing/` | Landing-page-only sections (Navbar, Hero, FAQ...), pull copy from `src/messages/`. |
 | `src/components/auth/` | Login/register forms, logout button — client components calling `authClient` directly. |
-| `src/components/dashboard/` | The real app: `overview/` (net P&L, stat tiles, page composition), `calendar/`, `trades/` (modals, forms, hooks), plus shared `icons.tsx`/`format-pnl.ts` at the root. |
+| `src/components/dashboard/` | The real app: `overview/` (net P&L, stat tiles, page composition), `calendar/`, `analytics/`, `playbook/`, `trades/` (form + detail views, hooks), plus shared `icons.tsx`/`format-pnl.ts` at the root. Trade create/edit/detail are dedicated routes under `dashboard/trades/`, not modals. |
 | `src/config/` | Static option lists (symbols, timeframes, sessions) and nav links — kept separate from components so they're easy to find/change. |
 | `src/i18n/` | next-intl setup: `routing.ts` (locales), `navigation.ts` (locale-aware Link/router), `request.ts` (per-request message loading). |
 | `src/lib/` | Cross-cutting singletons/helpers: `prisma.ts`, `auth.ts`/`auth-client.ts`, `trade-image-storage.ts`, `validate-trade.ts`, `utils.ts`, `fonts.ts`, `metadata.ts`. |
@@ -47,7 +47,7 @@ delete any time (`rm -rf .next` is a normal "something looks stale" fix).
 - **Phase 2 — auth:** done. Real email/password via Better Auth, two-layer
   route protection (`proxy.ts` optimistic + `dashboard/page.tsx` authoritative).
 - **Phase 3 — dashboard:** in progress. Sidebar, month calendar (color-coded by
-  P&L), trade create/edit/review/detail modals, and chart-image uploads all
+  P&L), trade create/edit/detail pages, and chart-image uploads all
   work against real `Trade`/`TradeImage` models.
 - **Deployed:** live on Netlify, Neon Postgres (separate `dev`/`production`
   branches — see `src/lib/prisma.ts`), trade chart images on Netlify Blobs in
@@ -121,7 +121,7 @@ to `session.user.id` — nothing is fetched or written across users.
 | `src/lib/validate-trade.ts` | Shared hand-rolled validation for both routes above (no `zod` yet). |
 | `src/components/dashboard/trades/use-month-trades.ts` | Client hook — fetches a month's trades, exposes `refetch`. |
 | `src/components/dashboard/trades/trade-stats.ts` | Turns raw trades into per-day P&L and month summary (best/worst day, streak). |
-| `src/components/dashboard/overview/dashboard-overview.tsx` | Wires the hook + stats into the calendar and the create/review/detail modals. |
+| `src/components/dashboard/overview/dashboard-overview.tsx` | Wires the hook + stats into the calendar/agenda; a day with trades opens an inline `CalendarDayPanel`, an empty day links to `/dashboard/trades/new`. |
 
 ### Trade chart images
 
@@ -143,5 +143,5 @@ id (an image doesn't need its parent trade in the URL once it exists).
 |---|---|
 | `src/components/dashboard/overview/` | `dashboard-overview.tsx` (page composition), `net-pnl-card.tsx`, `stats-grid.tsx`, `stat-tile.tsx`. |
 | `src/components/dashboard/calendar/` | `calendar.tsx`, `calendar-header.tsx`, `day-cell.tsx`, `calendar-grid.ts` (week/grid math), `format-date.ts` (locale-safe date strings). |
-| `src/components/dashboard/trades/` | `trade-form.tsx`/`trade-form-modal.tsx` (create/edit), `trade-review-modal.tsx` (day list), `trade-detail-modal.tsx` (single-trade view + chart images), `trading-session.ts` (Asian/London/NY lookup), `use-month-trades.ts`, `use-trade-images.ts`. |
+| `src/components/dashboard/trades/` | `trade-form.tsx` (the form body, with a live R:R / P&L / risk panel) + `trade-form-page.tsx` (wraps it for `/new` and `/[id]/edit`), `trade-detail-view.tsx` (`/[id]` read view + chart images), `calendar-day-panel.tsx` (inline day list), `trading-session.ts` (Asian/London/NY lookup), `use-month-trades.ts`, `use-trade-images.ts`. |
 | `src/components/dashboard/icons.tsx`, `format-pnl.ts` | Shared across all three folders above (icons, currency formatting) — stay at the `dashboard/` root rather than in any one subfolder. |

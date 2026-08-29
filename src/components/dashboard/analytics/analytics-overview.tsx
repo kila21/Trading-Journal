@@ -16,8 +16,6 @@ import {
   computePlannedR,
   computeAchievedR,
   computeWinLossBreakdown,
-  computeNetPnlAfterFees,
-  hasAnyCommission,
   computeAverageRiskPercent,
   computeRMultipleDistribution,
   computeExpectancyR,
@@ -34,6 +32,7 @@ import {
   computeDirectionBreakdown,
   computeDayOfWeekBreakdown,
   computeHourOfDayBreakdown,
+  computeEmotionBreakdown,
 } from "@/components/dashboard/trades/trade-breakdown-stats";
 import { AnalyticsRangeTabs } from "./analytics-range-tabs";
 import { PlannedVsAchievedCard } from "./planned-vs-achieved-card";
@@ -47,6 +46,7 @@ import { HourOfDayCard } from "./hour-of-day-card";
 import { HoldTimeCard } from "./hold-time-card";
 import { SymbolPerformanceCard } from "./symbol-performance-card";
 import { DirectionPerformanceCard } from "./direction-performance-card";
+import { EmotionPerformanceCard } from "./emotion-performance-card";
 import { StreaksCard } from "./streaks-card";
 
 const LOW_SAMPLE_THRESHOLD = 10;
@@ -68,8 +68,6 @@ export function AnalyticsOverview() {
   const accountBalance = settings?.accountBalance ?? null;
 
   const netPnl = useMemo(() => trades.reduce((sum, trade) => sum + trade.pnl, 0), [trades]);
-  const netPnlAfterFees = useMemo(() => computeNetPnlAfterFees(trades), [trades]);
-  const showNetAfterFees = useMemo(() => hasAnyCommission(trades), [trades]);
   const avgRiskPercent = useMemo(
     () => computeAverageRiskPercent(trades, accountBalance),
     [trades, accountBalance],
@@ -102,6 +100,7 @@ export function AnalyticsOverview() {
   const directionBreakdown = useMemo(() => computeDirectionBreakdown(trades), [trades]);
   const dayOfWeekBreakdown = useMemo(() => computeDayOfWeekBreakdown(trades), [trades]);
   const hourOfDayBreakdown = useMemo(() => computeHourOfDayBreakdown(trades), [trades]);
+  const emotionBreakdown = useMemo(() => computeEmotionBreakdown(trades), [trades]);
 
   if (error) {
     return (
@@ -130,7 +129,6 @@ export function AnalyticsOverview() {
           label={t("netPnl")}
           value={formatPnl(netPnl)}
           secondary={trades.length > 0 ? t("netPnlSecondary", { count: trades.length, rate: winRate }) : undefined}
-          footnote={showNetAfterFees ? t("netAfterFees", { amount: formatPnl(netPnlAfterFees) }) : undefined}
           tone={trades.length === 0 ? "neutral" : netPnl >= 0 ? "success" : "danger"}
         />
         <StatTile
@@ -171,6 +169,8 @@ export function AnalyticsOverview() {
       <StreaksCard streaks={streaks} />
 
       <DisciplineCard planComparison={planComparison} mistakeCosts={mistakeCosts} />
+
+      <EmotionPerformanceCard rows={emotionBreakdown} />
 
       <WinsVsLossesCard breakdown={winLossBreakdown} />
 

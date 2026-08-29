@@ -1,5 +1,6 @@
 // Hand-rolled server-side validation for trade create/update payloads.
 import { tradeMistakeTags, type TradeMistakeTag } from "@/config/trade-mistake-tags";
+import { tradeEmotions, type TradeEmotion } from "@/config/trade-emotions";
 import type { TradeInput } from "@/types/trade";
 
 type ValidationResult = { ok: true; data: TradeInput } | { ok: false; error: string };
@@ -33,10 +34,11 @@ export function validateTradeInput(body: unknown): ValidationResult {
     notes,
     setup,
     mistakeTags,
+    emotions,
     followedPlan,
     checkedConditions,
-    commission,
     riskAmount,
+    contractSize,
   } = body as Record<string, unknown>;
 
   if (typeof symbol !== "string" || symbol.trim().length === 0) {
@@ -61,13 +63,12 @@ export function validateTradeInput(body: unknown): ValidationResult {
     return { ok: false, error: "Stop loss must be a number." };
   }
 
-  const commissionResult = parseOptionalNumber(commission);
-  if (!commissionResult.ok || (commissionResult.value !== null && commissionResult.value < 0)) {
-    return { ok: false, error: "Commission must be a non-negative number." };
-  }
   const riskAmountResult = parseOptionalNumber(riskAmount);
   if (!riskAmountResult.ok || (riskAmountResult.value !== null && riskAmountResult.value < 0)) {
     return { ok: false, error: "Risk amount must be a non-negative number." };
+  }
+  if (contractSize !== undefined && contractSize !== null && typeof contractSize !== "string") {
+    return { ok: false, error: "Invalid contract size." };
   }
 
   if (typeof contracts !== "number" || !Number.isFinite(contracts) || contracts <= 0) {
@@ -107,6 +108,14 @@ export function validateTradeInput(body: unknown): ValidationResult {
       return { ok: false, error: "Invalid mistake tags." };
     }
   }
+  if (emotions !== undefined && emotions !== null) {
+    if (
+      !Array.isArray(emotions) ||
+      !emotions.every((emotion) => tradeEmotions.includes(emotion as TradeEmotion))
+    ) {
+      return { ok: false, error: "Invalid emotions." };
+    }
+  }
   if (followedPlan !== undefined && followedPlan !== null && typeof followedPlan !== "boolean") {
     return { ok: false, error: "Followed plan must be true, false, or unset." };
   }
@@ -135,12 +144,14 @@ export function validateTradeInput(body: unknown): ValidationResult {
       notes: typeof notes === "string" && notes.trim().length > 0 ? notes.trim() : null,
       setup: setup === undefined ? null : (setup as string | null),
       mistakeTags: Array.isArray(mistakeTags) ? (Array.from(new Set(mistakeTags)) as TradeMistakeTag[]) : [],
+      emotions: Array.isArray(emotions) ? (Array.from(new Set(emotions)) as TradeEmotion[]) : [],
       followedPlan: followedPlan === undefined ? null : (followedPlan as boolean | null),
       checkedConditions: Array.isArray(checkedConditions)
         ? checkedConditions.map((condition) => (condition as string).trim()).filter((condition) => condition.length > 0)
         : [],
-      commission: commissionResult.value,
       riskAmount: riskAmountResult.value,
+      contractSize:
+        typeof contractSize === "string" && contractSize.trim().length > 0 ? contractSize.trim() : null,
     },
   };
 }

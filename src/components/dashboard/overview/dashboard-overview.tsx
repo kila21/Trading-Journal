@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { NetPnlCard } from "@/components/dashboard/overview/net-pnl-card";
 import { StatsGrid } from "@/components/dashboard/overview/stats-grid";
 import { EquityCurveCard } from "@/components/dashboard/overview/equity-curve-card";
@@ -9,14 +10,11 @@ import { ViewToggle, type OverviewView } from "@/components/dashboard/overview/v
 import { DashboardOverviewSkeleton } from "@/components/dashboard/overview/dashboard-overview-skeleton";
 import { Calendar } from "@/components/dashboard/calendar/calendar";
 import { CalendarAgenda } from "@/components/dashboard/calendar/calendar-agenda";
+import { CalendarDayPanel } from "@/components/dashboard/trades/calendar-day-panel";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useMonthTrades } from "@/components/dashboard/trades/use-month-trades";
 import { groupTradesByDay } from "@/components/dashboard/trades/trade-stats";
-import { TradeReviewModal } from "@/components/dashboard/trades/trade-review-modal";
-import { TradeFormModal } from "@/components/dashboard/trades/trade-form-modal";
-import { TradeDetailModal } from "@/components/dashboard/trades/trade-detail-modal";
 import { ErrorState } from "@/components/ui/error-state";
-import type { TradeDTO } from "@/types/trade";
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -26,8 +24,16 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
+function toDateParam(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function DashboardOverview() {
   const t = useTranslations("dashboard");
+  const router = useRouter();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -53,11 +59,9 @@ export function DashboardOverview() {
   }
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [modal, setModal] = useState<"review" | "form" | "detail" | null>(null);
-  const [editingTrade, setEditingTrade] = useState<TradeDTO | undefined>(undefined);
-  const [detailTrade, setDetailTrade] = useState<TradeDTO | undefined>(undefined);
 
   function goToPrevMonth() {
+    setSelectedDate(null);
     if (month === 0) {
       setYear((prev) => prev - 1);
       setMonth(11);
@@ -67,6 +71,7 @@ export function DashboardOverview() {
   }
 
   function goToNextMonth() {
+    setSelectedDate(null);
     if (month === 11) {
       setYear((prev) => prev + 1);
       setMonth(0);
@@ -76,6 +81,7 @@ export function DashboardOverview() {
   }
 
   function goToToday() {
+    setSelectedDate(null);
     const today = new Date();
     setYear(today.getFullYear());
     setMonth(today.getMonth());
@@ -83,31 +89,11 @@ export function DashboardOverview() {
 
   function handleDayClick(date: Date) {
     const dayTrades = trades.filter((trade) => isSameDay(new Date(trade.tradeDate), date));
+    if (dayTrades.length === 0) {
+      router.push(`/dashboard/trades/new?date=${toDateParam(date)}`);
+      return;
+    }
     setSelectedDate(date);
-    setEditingTrade(undefined);
-    setModal(dayTrades.length > 0 ? "review" : "form");
-  }
-
-  function handleAddTrade() {
-    setEditingTrade(undefined);
-    setModal("form");
-  }
-
-  function handleEditTrade(trade: TradeDTO) {
-    setEditingTrade(trade);
-    setModal("form");
-  }
-
-  function handleReviewTrade(trade: TradeDTO) {
-    setDetailTrade(trade);
-    setModal("detail");
-  }
-
-  function handleCloseModal() {
-    setModal(null);
-    setEditingTrade(undefined);
-    setDetailTrade(undefined);
-    setSelectedDate(null);
   }
 
   const selectedDayTrades = selectedDate
@@ -161,30 +147,8 @@ export function DashboardOverview() {
         <EquityCurveCard trades={trades} />
       )}
 
-      {selectedDate && modal === "review" && (
-        <TradeReviewModal
-          date={selectedDate}
-          trades={selectedDayTrades}
-          onClose={handleCloseModal}
-          onAddTrade={handleAddTrade}
-          onEditTrade={handleEditTrade}
-          onReviewTrade={handleReviewTrade}
-        />
-      )}
-      {selectedDate && modal === "form" && (
-        <TradeFormModal
-          date={selectedDate}
-          trade={editingTrade}
-          onClose={handleCloseModal}
-          onSaved={refetch}
-        />
-      )}
-      {modal === "detail" && detailTrade && (
-        <TradeDetailModal
-          trade={detailTrade}
-          onClose={handleCloseModal}
-          onEdit={() => handleEditTrade(detailTrade)}
-        />
+      {selectedDate && selectedDayTrades.length > 0 && (
+        <CalendarDayPanel date={selectedDate} trades={selectedDayTrades} />
       )}
     </div>
   );

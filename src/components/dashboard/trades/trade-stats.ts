@@ -18,16 +18,16 @@ import type {
   ConsecutiveStreaks,
 } from "@/types/trade";
 import type { CalendarDay } from "@/types/calendar";
+import { resolvePointValue } from "@/config/instrument-specs";
 
 export function groupTradesByDay(trades: TradeDTO[]): Map<number, DailyStats> {
   const stats = new Map<number, DailyStats>();
 
   for (const trade of trades) {
     const day = new Date(trade.tradeDate).getDate();
-    const existing = stats.get(day) ?? { pnl: 0, commission: 0, trades: 0, wins: 0, firstTradeDate: trade.tradeDate };
+    const existing = stats.get(day) ?? { pnl: 0, trades: 0, wins: 0, firstTradeDate: trade.tradeDate };
 
     existing.pnl += trade.pnl;
-    existing.commission += trade.commission ?? 0;
     existing.trades += 1;
     if (trade.pnl >= 0) existing.wins += 1;
     if (trade.tradeDate < existing.firstTradeDate) existing.firstTradeDate = trade.tradeDate;
@@ -189,11 +189,14 @@ export function computePlannedR(trade: TradeDTO): number | null {
  * computePlannedR, deliberately not derived from pnl/contracts. A dollar-based
  * version (pnl / (riskPerUnit * contracts)) only holds for instruments priced
  * at exactly $1-per-point-per-contract; for anything else (gold, forex,
- * leveraged crypto) that silently produces a meaningless number, since this
- * app has no per-instrument point-value/multiplier to convert price distance
- * into dollars correctly. Price-ratio avoids that dependency entirely and
- * stays directly comparable to planned R. Null under the same missing-stop /
- * zero-risk condition as computePlannedR.
+ * leveraged crypto) that silently produces a meaningless number. The price
+ * ratio avoids that dependency and stays directly comparable to planned R.
+ *
+ * Note: with a resolved point value (src/config/instrument-specs.ts), the
+ * dollar form `pnl / computeDollarRisk(trade)` reduces to this same ratio —
+ * the point value and contract count cancel out of numerator and denominator
+ * — so "achieved R" stays a single number regardless of unit. Null under the
+ * same missing-stop / zero-risk condition as computePlannedR.
  */
 export function computeAchievedR(trade: TradeDTO): number | null {
   if (trade.stopLoss === null) return null;
@@ -206,6 +209,20 @@ export function computeAchievedR(trade: TradeDTO): number | null {
 
 export function formatRMultiple(value: number): string {
   return `${value.toFixed(2)}R`;
+}
+
+/**
+ * Dollar risk on a trade: entry-to-stop price distance × the resolved point
+ * value × contract count. Null when there's no stop, the stop sits on entry,
+ * or no point value resolves for the symbol/size (and no per-trade override).
+ */
+export function computeDollarRisk(trade: TradeDTO): number | null {
+  if (trade.stopLoss === null) return null;
+  const pointValue = resolvePointValue(trade.symbol, trade.contractSize);
+  if (pointValue === null) return null;
+  const distance = Math.abs(trade.entryPrice - trade.stopLoss);
+  if (distance === 0) return null;
+  return distance * pointValue * trade.contracts;
 }
 
 /**
@@ -260,21 +277,6 @@ export function computeExpectancy(trades: TradeDTO[]): number | null {
   const avgWin = wins.length > 0 ? wins.reduce((sum, t) => sum + t.pnl, 0) / wins.length : 0;
   const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0)) / losses.length : 0;
   return winRate * avgWin - lossRate * avgLoss;
-}
-
-/**
- * Net P&L after subtracting each trade's optional commission — `pnl` itself
- * stays untouched everywhere else (it's the trader's manually-entered real
- * result). Returns the same total as summing `pnl` when no trade has a
- * commission set, so callers can always show this without an empty-state check.
- */
-export function computeNetPnlAfterFees(trades: TradeDTO[]): number {
-  return trades.reduce((sum, trade) => sum + trade.pnl - (trade.commission ?? 0), 0);
-}
-
-/** True when at least one trade in the set has a commission recorded. */
-export function hasAnyCommission(trades: TradeDTO[]): boolean {
-  return trades.some((trade) => trade.commission !== null);
 }
 
 /**

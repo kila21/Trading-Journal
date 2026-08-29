@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent, type SubmitEvent } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,11 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleChipGroup } from "@/components/ui/toggle-chip-group";
 import { ToggleSwitch } from "@/components/ui/toggle-switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { formatFullDate, toLocale } from "@/components/dashboard/calendar/format-date";
 import { formatPnl } from "@/components/dashboard/format-pnl";
 import { ChevronRightIcon, ImageIcon } from "@/components/dashboard/icons";
 import { tradeSymbols } from "@/config/trade-symbols";
 import { tradeMistakeTags, type TradeMistakeTag } from "@/config/trade-mistake-tags";
+import { tradeEmotions, type TradeEmotion } from "@/config/trade-emotions";
+import {
+  contractTypesFor,
+  defaultContractType,
+  resolvePointValue,
+} from "@/config/instrument-specs";
 import { useSetups } from "@/components/dashboard/playbook/use-setups";
 import { useTradingSettings } from "@/components/dashboard/settings/use-trading-settings";
 import { formatRMultiple, formatDuration } from "./trade-stats";
@@ -40,6 +45,10 @@ function toDateInputValue(date: Date): string {
 function parseDateInputValue(value: string): Date {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day);
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 /**
@@ -174,6 +183,12 @@ function computeRiskReward(
   return { risk, reward, plannedR: reward / risk };
 }
 
+function numberOrNull(value: string): number | null {
+  if (value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function formStateFor(trade: TradeDTO | undefined, date: Date) {
   if (trade) {
     return {
@@ -184,6 +199,7 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
       takeProfit: trade.takeProfit === null ? "" : String(trade.takeProfit),
       stopLoss: trade.stopLoss === null ? "" : String(trade.stopLoss),
       contracts: String(trade.contracts),
+      contractSize: trade.contractSize ?? defaultContractType(trade.symbol) ?? "",
       pnl: String(Math.abs(trade.pnl)),
       dateInput: toDateInputValue(new Date(trade.tradeDate)),
       time: toTimeInputValue(new Date(trade.tradeDate)),
@@ -191,10 +207,10 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
       exitTime: trade.exitDate ? toTimeInputValue(new Date(trade.exitDate)) : "",
       notes: trade.notes ?? "",
       setup: trade.setup ?? "",
-      mistakeTags: trade.mistakeTags,
+      mistakeTags: trade.mistakeTags ?? [],
+      emotions: trade.emotions ?? [],
       followedPlan: trade.followedPlan === true,
-      checkedConditions: trade.checkedConditions,
-      commission: trade.commission === null ? "" : String(trade.commission),
+      checkedConditions: trade.checkedConditions ?? [],
       riskAmount: trade.riskAmount === null ? "" : String(trade.riskAmount),
     };
   }
@@ -207,6 +223,7 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
     takeProfit: "",
     stopLoss: "",
     contracts: "",
+    contractSize: "",
     pnl: "",
     dateInput: toDateInputValue(date),
     time: toTimeInputValue(new Date()),
@@ -215,26 +232,43 @@ function formStateFor(trade: TradeDTO | undefined, date: Date) {
     notes: "",
     setup: "",
     mistakeTags: [] as TradeMistakeTag[],
+    emotions: [] as TradeEmotion[],
     followedPlan: false,
     checkedConditions: [] as string[],
-    commission: "",
     riskAmount: "",
   };
 }
 
+function PanelRow({ label, value, tone }: { label: string; value: string; tone?: "success" | "danger" }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-muted">{label}</span>
+      <span
+        className={cn(
+          "font-semibold",
+          tone === "success" ? "text-success" : tone === "danger" ? "text-danger" : "text-foreground",
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
 export function TradeForm({
-  date,
+  date = new Date(),
   trade,
-  onClose,
   onSaved,
+  onCancel,
+  onDeleted,
 }: {
-  date: Date;
+  date?: Date;
   trade?: TradeDTO;
-  onClose: () => void;
-  onSaved: () => void;
+  onSaved: (trade: TradeDTO) => void;
+  onCancel: () => void;
+  onDeleted: () => void;
 }) {
   const t = useTranslations("dashboard");
-  const locale = toLocale(useLocale());
   const { setups } = useSetups();
   const { settings: tradingSettings } = useTradingSettings();
   const accountBalance = tradingSettings?.accountBalance ?? null;
@@ -260,18 +294,46 @@ export function TradeForm({
     form.exitTime,
   );
 
-  const pnlSign = computePnlSign(form.direction, form.entryPrice, form.exitPrice);
-  const pnlMagnitude = Number(form.pnl);
-  const computedPnl =
-    form.pnl !== "" && Number.isFinite(pnlMagnitude) ? pnlSign * Math.abs(pnlMagnitude) : null;
+  const contractTypes = contractTypesFor(form.symbol);
+  const resolvedPointValue = resolvePointValue(form.symbol, form.contractSize || null);
 
-  const riskAmountValue = Number(form.riskAmount);
+  const entryNum = numberOrNull(form.entryPrice);
+  const exitNum = numberOrNull(form.exitPrice);
+  const stopNum = numberOrNull(form.stopLoss);
+  const contractsNum = numberOrNull(form.contracts);
+
+  const pnlSign = computePnlSign(form.direction, form.entryPrice, form.exitPrice);
+
+  // Magnitude of the P&L derived from prices × contracts × $/point. Non-null
+  // only when all of those resolve — that's also when the P&L field goes
+  // read-only, so the trader never types a number the app can compute.
+  const derivedPnlMagnitude =
+    entryNum !== null && exitNum !== null && contractsNum !== null && resolvedPointValue !== null
+      ? round2(Math.abs(exitNum - entryNum) * resolvedPointValue * contractsNum)
+      : null;
+  const isPnlDerived = derivedPnlMagnitude !== null;
+
+  const displayedPnl = isPnlDerived ? String(derivedPnlMagnitude) : form.pnl;
+  const manualPnlNum = numberOrNull(form.pnl);
+  const computedPnl = isPnlDerived
+    ? pnlSign * derivedPnlMagnitude!
+    : manualPnlNum !== null
+      ? pnlSign * Math.abs(manualPnlNum)
+      : null;
+
+  const liveDollarRisk =
+    entryNum !== null && stopNum !== null && contractsNum !== null && resolvedPointValue !== null
+      ? (() => {
+          const distance = Math.abs(entryNum - stopNum);
+          return distance === 0 ? null : distance * resolvedPointValue * contractsNum;
+        })()
+      : null;
+
+  const riskAmountValue = numberOrNull(form.riskAmount);
+  const riskForPercent = riskAmountValue ?? liveDollarRisk;
   const liveRiskPercent =
-    accountBalance !== null &&
-    accountBalance > 0 &&
-    form.riskAmount !== "" &&
-    Number.isFinite(riskAmountValue)
-      ? (riskAmountValue / accountBalance) * 100
+    accountBalance !== null && accountBalance > 0 && riskForPercent !== null
+      ? (riskForPercent / accountBalance) * 100
       : null;
 
   const riskReward = computeRiskReward(form.entryPrice, form.stopLoss, form.takeProfit);
@@ -282,17 +344,27 @@ export function TradeForm({
 
   const liveSession = (() => {
     if (form.time === "" || form.dateInput === "") return null;
-    const [hours, minutes] = form.time.split(":").map(Number);
-    const entryDateTime = parseDateInputValue(form.dateInput);
-    entryDateTime.setHours(hours || 0, minutes || 0, 0, 0);
-    return getTradingSession(entryDateTime);
+    return getTradingSession(combineDateTime(form.dateInput, form.time));
   })();
+
+  const panelHasContent =
+    riskReward !== null ||
+    computedPnl !== null ||
+    liveDollarRisk !== null ||
+    liveRiskPercent !== null ||
+    liveSession !== null ||
+    liveHoldMinutes !== null;
 
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleSymbolChange(event: ChangeEvent<HTMLInputElement>) {
+    const symbol = event.target.value;
+    setForm((prev) => ({ ...prev, symbol, contractSize: defaultContractType(symbol) ?? "" }));
   }
 
   // Checked conditions are specific to whichever setup they were checked
@@ -317,9 +389,7 @@ export function TradeForm({
     setError(null);
     setPending(true);
 
-    const [hours, minutes] = form.time.split(":").map(Number);
-    const tradeDate = parseDateInputValue(form.dateInput);
-    tradeDate.setHours(hours || 0, minutes || 0, 0, 0);
+    const tradeDate = combineDateTime(form.dateInput, form.time);
 
     // Exit can be its own calendar day (swing/overnight holds). When only a
     // time is given, the exit date falls back to the entry day.
@@ -331,6 +401,8 @@ export function TradeForm({
       ).toISOString();
     }
 
+    const pnlMagnitude = isPnlDerived ? derivedPnlMagnitude! : Math.abs(Number(form.pnl) || 0);
+
     const payload = {
       symbol: form.symbol,
       direction: form.direction,
@@ -339,16 +411,17 @@ export function TradeForm({
       takeProfit: form.takeProfit === "" ? null : Number(form.takeProfit),
       stopLoss: form.stopLoss === "" ? null : Number(form.stopLoss),
       contracts: Number(form.contracts),
-      pnl: computePnlSign(form.direction, form.entryPrice, form.exitPrice) * Math.abs(Number(form.pnl)),
+      pnl: computePnlSign(form.direction, form.entryPrice, form.exitPrice) * pnlMagnitude,
       tradeDate: tradeDate.toISOString(),
       exitDate,
       notes: form.notes,
       setup: form.setup === "" ? null : form.setup,
       mistakeTags: form.mistakeTags,
+      emotions: form.emotions,
       followedPlan: form.followedPlan,
       checkedConditions: form.checkedConditions,
-      commission: form.commission === "" ? null : Number(form.commission),
       riskAmount: form.riskAmount === "" ? null : Number(form.riskAmount),
+      contractSize: form.contractSize === "" ? null : form.contractSize,
     };
 
     const isCreating = !effectiveTrade;
@@ -409,7 +482,6 @@ export function TradeForm({
     }
 
     setPending(false);
-    onSaved();
 
     if (failedUploadCount > 0) {
       setError(t("imageUploadFailedCount", { count: failedUploadCount, total: totalUploadCount }));
@@ -417,12 +489,7 @@ export function TradeForm({
       return;
     }
 
-    onClose();
-  }
-
-  function handleDelete() {
-    if (!effectiveTrade) return;
-    setConfirmingDelete(true);
+    onSaved(savedTrade);
   }
 
   async function confirmDelete() {
@@ -438,161 +505,163 @@ export function TradeForm({
       return;
     }
 
-    onSaved();
-    onClose();
+    onDeleted();
   }
+
+  const contractSizeValue = form.contractSize || (defaultContractType(form.symbol) ?? "");
 
   return (
     <>
-      <h2 className="text-lg font-semibold">{effectiveTrade ? t("editTrade") : t("newTrade")}</h2>
-      <p className="mt-1 text-sm text-muted">
-        {formatFullDate(form.dateInput === "" ? date : parseDateInputValue(form.dateInput), locale)}
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-left">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="symbol">{t("symbolLabel")}</Label>
-            <Input
-              id="symbol"
-              name="symbol"
-              list="trade-symbols"
-              autoComplete="off"
-              required
-              value={form.symbol}
-              onChange={handleChange}
-            />
-            <datalist id="trade-symbols">
-              {tradeSymbols.map((symbol) => (
-                <option key={symbol} value={symbol} />
-              ))}
-            </datalist>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="direction">{t("directionLabel")}</Label>
-            <Select id="direction" name="direction" value={form.direction} onChange={handleChange}>
-              <option value="long">{t("directionLong")}</option>
-              <option value="short">{t("directionShort")}</option>
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted">{t("planSectionLabel")}</p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-6 text-left">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="entryPrice">{t("entryPriceLabel")}</Label>
+              <Label htmlFor="symbol">{t("symbolLabel")}</Label>
               <Input
-                id="entryPrice"
-                name="entryPrice"
-                type="number"
-                step="any"
+                id="symbol"
+                name="symbol"
+                list="trade-symbols"
+                autoComplete="off"
                 required
-                value={form.entryPrice}
-                onChange={handleChange}
+                value={form.symbol}
+                onChange={handleSymbolChange}
               />
+              <datalist id="trade-symbols">
+                {tradeSymbols.map((symbol) => (
+                  <option key={symbol} value={symbol} />
+                ))}
+              </datalist>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="stopLoss">{t("stopLossLabel")}</Label>
-              <Input
-                id="stopLoss"
-                name="stopLoss"
-                type="number"
-                step="any"
-                value={form.stopLoss}
-                onChange={handleChange}
-              />
-              {stopLossWarning && <p className="text-xs text-warning">{t("stopLossWarning")}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="takeProfit">{t("takeProfitLabel")}</Label>
-              <Input
-                id="takeProfit"
-                name="takeProfit"
-                type="number"
-                step="any"
-                value={form.takeProfit}
-                onChange={handleChange}
-              />
-              {takeProfitWarning && <p className="text-xs text-warning">{t("takeProfitWarning")}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="riskAmount">{t("riskAmountLabel")}</Label>
-              <Input
-                id="riskAmount"
-                name="riskAmount"
-                type="number"
-                step="any"
-                min="0"
-                value={form.riskAmount}
-                onChange={handleChange}
-              />
-              {liveRiskPercent !== null ? (
-                <p className="text-xs text-muted">
-                  {t("riskPercentOfAccount", { percent: liveRiskPercent.toFixed(1) })}
-                </p>
-              ) : (
-                <p className="text-xs text-muted">{t("riskAmountHint")}</p>
-              )}
+              <Label htmlFor="direction">{t("directionLabel")}</Label>
+              <Select id="direction" name="direction" value={form.direction} onChange={handleChange}>
+                <option value="long">{t("directionLong")}</option>
+                <option value="short">{t("directionShort")}</option>
+              </Select>
             </div>
           </div>
 
-          {riskReward && (
-            <div className="rounded-lg bg-primary/15 px-4 py-2.5 text-sm font-medium text-primary">
-              <div className="flex items-center justify-between">
-                <span>
-                  {t("riskRewardLabel")} {formatRiskRewardRatio(riskReward.risk, riskReward.reward)}
-                </span>
-                <span>
-                  {t("plannedInlineLabel")} {formatRMultiple(riskReward.plannedR)}
-                </span>
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted">{t("planSectionLabel")}</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="entryPrice">{t("entryPriceLabel")}</Label>
+                <Input
+                  id="entryPrice"
+                  name="entryPrice"
+                  type="number"
+                  step="any"
+                  required
+                  value={form.entryPrice}
+                  onChange={handleChange}
+                />
               </div>
-              {belowMinRWarning && (
-                <p className="mt-1 text-xs font-medium text-warning">
-                  {t("belowMinRWarning", {
-                    planned: formatRMultiple(riskReward.plannedR),
-                    min: formatRMultiple(selectedSetup!.minR!),
-                  })}
-                </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="stopLoss">{t("stopLossLabel")}</Label>
+                <Input
+                  id="stopLoss"
+                  name="stopLoss"
+                  type="number"
+                  step="any"
+                  value={form.stopLoss}
+                  onChange={handleChange}
+                />
+                {stopLossWarning && <p className="text-xs text-warning">{t("stopLossWarning")}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="takeProfit">{t("takeProfitLabel")}</Label>
+                <Input
+                  id="takeProfit"
+                  name="takeProfit"
+                  type="number"
+                  step="any"
+                  value={form.takeProfit}
+                  onChange={handleChange}
+                />
+                {takeProfitWarning && <p className="text-xs text-warning">{t("takeProfitWarning")}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="riskAmount">{t("riskAmountLabel")}</Label>
+                <Input
+                  id="riskAmount"
+                  name="riskAmount"
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={form.riskAmount}
+                  onChange={handleChange}
+                />
+                <p className="text-xs text-muted">{t("riskAmountHint")}</p>
+              </div>
+            </div>
+
+            {belowMinRWarning && (
+              <p className="text-xs font-medium text-warning">
+                {t("belowMinRWarning", {
+                  planned: formatRMultiple(riskReward!.plannedR),
+                  min: formatRMultiple(selectedSetup!.minR!),
+                })}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-muted">{t("resultSectionLabel")}</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="exitPrice">{t("exitPriceLabel")}</Label>
+                <Input
+                  id="exitPrice"
+                  name="exitPrice"
+                  type="number"
+                  step="any"
+                  value={form.exitPrice}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="contracts" className="flex items-center gap-1.5">
+                  {t("contractsLabel")}
+                  <InfoTooltip text={t("contractsHint")} />
+                </Label>
+                <Input
+                  id="contracts"
+                  name="contracts"
+                  type="number"
+                  step="any"
+                  min="0"
+                  required
+                  value={form.contracts}
+                  onChange={handleChange}
+                />
+              </div>
+              {contractTypes && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="contractSize" className="flex items-center gap-1.5">
+                    {t("contractSizeLabel")}
+                    <InfoTooltip text={t("contractTypeHint")} />
+                  </Label>
+                  <Select
+                    id="contractSize"
+                    name="contractSize"
+                    value={contractSizeValue}
+                    onChange={handleChange}
+                    disabled={contractTypes.length < 2}
+                  >
+                    {contractTypes.map((type) => (
+                      <option key={type.key} value={type.key}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               )}
             </div>
-          )}
-        </div>
 
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted">{t("resultSectionLabel")}</p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="exitPrice">{t("exitPriceLabel")}</Label>
-              <Input
-                id="exitPrice"
-                name="exitPrice"
-                type="number"
-                step="any"
-                value={form.exitPrice}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="contracts" className="flex items-center gap-1.5">
-                {t("contractsLabel")}
-                <InfoTooltip text={t("contractsHint")} />
-              </Label>
-              <Input
-                id="contracts"
-                name="contracts"
-                type="number"
-                step="any"
-                min="0"
-                required
-                value={form.contracts}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:max-w-[13rem]">
               <Label htmlFor="pnl" className="flex items-center gap-1.5">
                 {t("pnlLabel")}
-                <InfoTooltip text={t("pnlHint")} />
+                {!isPnlDerived && <InfoTooltip text={t("pnlHint")} />}
               </Label>
               <Input
                 id="pnl"
@@ -600,216 +669,249 @@ export function TradeForm({
                 type="number"
                 step="any"
                 min="0"
-                required
-                value={form.pnl}
+                required={!isPnlDerived}
+                readOnly={isPnlDerived}
+                value={displayedPnl}
                 onChange={handleChange}
-                style={{ color: computedPnl === null ? undefined : computedPnl > 0 ? "var(--success)" : computedPnl < 0 ? "var(--danger)" : undefined }}
-                className="font-semibold"
+                className={cn("font-semibold", isPnlDerived && "bg-background/40")}
+                style={{
+                  color:
+                    computedPnl === null
+                      ? undefined
+                      : computedPnl > 0
+                        ? "var(--success)"
+                        : computedPnl < 0
+                          ? "var(--danger)"
+                          : undefined,
+                }}
               />
-              {computedPnl !== null && (
-                <p
-                  className={cn(
-                    "text-xs font-medium",
-                    computedPnl > 0 ? "text-success" : computedPnl < 0 ? "text-danger" : "text-muted",
-                  )}
-                >
-                  {t("calculatedPnl")}: {formatPnl(computedPnl)}
-                </p>
-              )}
+              <p className="text-xs text-muted">{isPnlDerived ? t("pnlDerivedHint") : t("pnlManualHint")}</p>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="commission">{t("commissionLabel")}</Label>
-              <Input
-                id="commission"
-                name="commission"
-                type="number"
-                step="any"
-                min="0"
-                value={form.commission}
-                onChange={handleChange}
-              />
-              <p className="text-xs text-muted">{t("commissionHint")}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="dateInput">{t("tradeDateLabel")}</Label>
-              <Input
-                id="dateInput"
-                name="dateInput"
-                type="date"
-                required
-                value={form.dateInput}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="time">{t("entryTimeLabel")}</Label>
-              <Input id="time" name="time" type="time" required value={form.time} onChange={handleChange} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="exitDateInput">{t("exitDateLabel")}</Label>
-              <Input
-                id="exitDateInput"
-                name="exitDateInput"
-                type="date"
-                min={form.dateInput || undefined}
-                value={form.exitDateInput}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="exitTime">{t("exitTimeLabel")}</Label>
-              <Input id="exitTime" name="exitTime" type="time" value={form.exitTime} onChange={handleChange} />
-            </div>
-          </div>
-          {exitBeforeEntryWarning && <p className="text-xs text-warning">{t("exitTimeWarning")}</p>}
-          {form.time !== "" && (
-            <div className="flex items-center justify-between">
-              {liveSession ? (
-                <span className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                  {t(sessionTranslationKeys[liveSession.name])}
-                </span>
-              ) : (
-                <span className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted">
-                  {t("noActiveSession")}
-                </span>
-              )}
-              {liveHoldMinutes !== null && (
-                <span className="text-xs font-medium text-muted">
-                  {t("holdDurationLabel")}: {formatDuration(liveHoldMinutes)}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-4 border-t border-border pt-4">
-          <div className="flex items-end justify-between gap-4">
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor="setup">{t("setupLabel")}</Label>
-              <Select id="setup" name="setup" value={form.setup} onChange={handleSetupChange}>
-                <option value="">{t("setupNone")}</option>
-                {setups.map((s) => (
-                  <option key={s.id} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <ToggleSwitch
-              checked={form.followedPlan}
-              onChange={(checked) => setForm((prev) => ({ ...prev, followedPlan: checked }))}
-              label={t("followedPlan")}
-            />
           </div>
 
-          {selectedSetup && selectedSetup.conditions.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label>{t("conditionsYouSawLabel")}</Label>
-                <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted">
-                  {t("conditionsCounter", {
-                    checked: form.checkedConditions.length,
-                    total: selectedSetup.conditions.length,
-                  })}
-                </span>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="dateInput">{t("tradeDateLabel")}</Label>
+                <Input
+                  id="dateInput"
+                  name="dateInput"
+                  type="date"
+                  required
+                  value={form.dateInput}
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-1.5">
-                {selectedSetup.conditions.map((condition) => (
-                  <label key={condition} className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={form.checkedConditions.includes(condition)}
-                      onChange={(event) => toggleCondition(condition, event.target.checked)}
-                      className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
-                    />
-                    {condition}
-                  </label>
-                ))}
+                <Label htmlFor="time">{t("entryTimeLabel")}</Label>
+                <Input id="time" name="time" type="time" required value={form.time} onChange={handleChange} />
               </div>
             </div>
-          )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="exitDateInput">{t("exitDateLabel")}</Label>
+                <Input
+                  id="exitDateInput"
+                  name="exitDateInput"
+                  type="date"
+                  min={form.dateInput || undefined}
+                  value={form.exitDateInput}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="exitTime">{t("exitTimeLabel")}</Label>
+                <Input id="exitTime" name="exitTime" type="time" value={form.exitTime} onChange={handleChange} />
+              </div>
+            </div>
+            {exitBeforeEntryWarning && <p className="text-xs text-warning">{t("exitTimeWarning")}</p>}
+          </div>
+
+          <div className="space-y-4 border-t border-border pt-4">
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex-1 space-y-1.5">
+                <Label htmlFor="setup">{t("setupLabel")}</Label>
+                <Select id="setup" name="setup" value={form.setup} onChange={handleSetupChange}>
+                  <option value="">{t("setupNone")}</option>
+                  {setups.map((s) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <ToggleSwitch
+                checked={form.followedPlan}
+                onChange={(checked) => setForm((prev) => ({ ...prev, followedPlan: checked }))}
+                label={t("followedPlan")}
+              />
+            </div>
+
+            {selectedSetup && selectedSetup.conditions.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label>{t("conditionsYouSawLabel")}</Label>
+                  <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted">
+                    {t("conditionsCounter", {
+                      checked: form.checkedConditions.length,
+                      total: selectedSetup.conditions.length,
+                    })}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {selectedSetup.conditions.map((condition) => (
+                    <label key={condition} className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={form.checkedConditions.includes(condition)}
+                        onChange={(event) => toggleCondition(condition, event.target.checked)}
+                        className="mt-0.5 size-4 shrink-0 rounded border-border accent-primary"
+                      />
+                      {condition}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label>{t("emotionsLabel")}</Label>
+              <ToggleChipGroup
+                options={tradeEmotions}
+                selected={form.emotions}
+                onChange={(next) => setForm((prev) => ({ ...prev, emotions: next }))}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>{t("mistakeTagsLabel")}</Label>
+              <ToggleChipGroup
+                options={tradeMistakeTags}
+                selected={form.mistakeTags}
+                onChange={(next) => setForm((prev) => ({ ...prev, mistakeTags: next }))}
+                tone="danger"
+              />
+            </div>
+          </div>
 
           <div className="space-y-1.5">
-            <Label>{t("mistakeTagsLabel")}</Label>
-            <ToggleChipGroup
-              options={tradeMistakeTags}
-              selected={form.mistakeTags}
-              onChange={(next) => setForm((prev) => ({ ...prev, mistakeTags: next }))}
-              tone="danger"
+            <Label htmlFor="notes">{t("notesLabel")}</Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              rows={4}
+              placeholder={t("notesPlaceholder")}
+              value={form.notes}
+              onChange={handleChange}
             />
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => setImagesOpen((prev) => !prev)}
+              aria-expanded={imagesOpen}
+              aria-label={imagesOpen ? t("collapseChartTimeframes") : t("expandChartTimeframes")}
+              className={cn(
+                "flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-background/40 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-background/60",
+                imagesOpen && "rounded-b-none border-b-transparent",
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <ImageIcon className="size-4 text-muted" />
+                {t("chartTimeframes")}
+              </span>
+              <ChevronRightIcon className={cn("size-4 text-muted transition-transform", imagesOpen && "rotate-90")} />
+            </button>
+            {imagesOpen && (
+              <div className="rounded-b-lg border border-t-0 border-border bg-background/20 p-4">
+                {effectiveTrade && pendingImages.length === 0 ? (
+                  <TradeImageManager tradeId={effectiveTrade.id} />
+                ) : (
+                  <PendingImageManager
+                    entries={pendingImages}
+                    onAdd={(entry) => setPendingImages((prev) => [...prev, entry])}
+                    onRemove={(localId) =>
+                      setPendingImages((prev) => prev.filter((entry) => entry.localId !== localId))
+                    }
+                    onUpdate={(localId, updates) =>
+                      setPendingImages((prev) =>
+                        prev.map((entry) => (entry.localId === localId ? { ...entry, ...updates } : entry)),
+                      )
+                    }
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="notes">{t("notesLabel")}</Label>
-          <Textarea id="notes" name="notes" value={form.notes} onChange={handleChange} />
-        </div>
-
-        <div className="border-t border-border pt-4">
-          <button
-            type="button"
-            onClick={() => setImagesOpen((prev) => !prev)}
-            aria-expanded={imagesOpen}
-            aria-label={imagesOpen ? t("collapseChartTimeframes") : t("expandChartTimeframes")}
-            className={cn(
-              "flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-background/40 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-background/60",
-              imagesOpen && "rounded-b-none border-b-transparent",
+        <aside className="h-fit space-y-4 lg:sticky lg:top-6">
+          <div className="rounded-2xl border border-border bg-surface p-4">
+            <p className="text-sm font-semibold text-foreground">{t("liveSummaryTitle")}</p>
+            {panelHasContent ? (
+              <div className="mt-3 space-y-2">
+                {riskReward && (
+                  <>
+                    <PanelRow
+                      label={t("riskRewardLabel")}
+                      value={formatRiskRewardRatio(riskReward.risk, riskReward.reward)}
+                    />
+                    <PanelRow label={t("plannedRLabel")} value={formatRMultiple(riskReward.plannedR)} />
+                  </>
+                )}
+                {computedPnl !== null && (
+                  <PanelRow
+                    label={t("calculatedPnl")}
+                    value={formatPnl(computedPnl)}
+                    tone={computedPnl > 0 ? "success" : computedPnl < 0 ? "danger" : undefined}
+                  />
+                )}
+                {liveDollarRisk !== null && (
+                  <PanelRow label={t("dollarRiskLabel")} value={formatPnl(-liveDollarRisk)} tone="danger" />
+                )}
+                {liveRiskPercent !== null && (
+                  <PanelRow
+                    label={t("riskPercentLabel")}
+                    value={t("riskPercentOfAccount", { percent: liveRiskPercent.toFixed(1) })}
+                  />
+                )}
+                {resolvedPointValue !== null && (
+                  <PanelRow label={t("pointValueLabel")} value={`$${formatPlanValue(resolvedPointValue)}`} />
+                )}
+                {liveSession !== null && (
+                  <PanelRow label={t("sessionLabel")} value={t(sessionTranslationKeys[liveSession.name])} />
+                )}
+                {liveHoldMinutes !== null && (
+                  <PanelRow label={t("holdDurationLabel")} value={formatDuration(liveHoldMinutes)} />
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-muted">{t("liveSummaryEmpty")}</p>
             )}
-          >
-            <span className="flex items-center gap-2">
-              <ImageIcon className="size-4 text-muted" />
-              {t("chartTimeframes")}
-            </span>
-            <ChevronRightIcon className={cn("size-4 text-muted transition-transform", imagesOpen && "rotate-90")} />
-          </button>
-          {imagesOpen && (
-            <div className="rounded-b-lg border border-t-0 border-border bg-background/20 p-4">
-              {effectiveTrade && pendingImages.length === 0 ? (
-                <TradeImageManager tradeId={effectiveTrade.id} />
-              ) : (
-                <PendingImageManager
-                  entries={pendingImages}
-                  onAdd={(entry) => setPendingImages((prev) => [...prev, entry])}
-                  onRemove={(localId) =>
-                    setPendingImages((prev) => prev.filter((entry) => entry.localId !== localId))
-                  }
-                  onUpdate={(localId, updates) =>
-                    setPendingImages((prev) =>
-                      prev.map((entry) => (entry.localId === localId ? { ...entry, ...updates } : entry)),
-                    )
-                  }
-                />
-              )}
-            </div>
-          )}
-        </div>
+          </div>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
 
-        <div className="flex items-center justify-between gap-3 pt-2">
-          {effectiveTrade ? (
-            <Button type="button" variant="outline" disabled={pending} onClick={handleDelete}>
-              {t("deleteTrade")}
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex items-center gap-3">
-            <Button type="button" variant="ghost" disabled={pending} onClick={onClose}>
-              {t("cancel")}
-            </Button>
+          <div className="flex flex-col gap-2">
             <Button type="submit" disabled={pending}>
               {effectiveTrade ? t("saveTradeSubmit") : t("addTradeSubmit")}
             </Button>
+            <Button type="button" variant="ghost" disabled={pending} onClick={onCancel}>
+              {t("cancel")}
+            </Button>
+            {effectiveTrade && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                {t("deleteTrade")}
+              </Button>
+            )}
           </div>
-        </div>
+        </aside>
       </form>
 
       {confirmingDelete && (

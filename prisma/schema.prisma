@@ -111,21 +111,32 @@ model Trade {
   // `direction` above — no migration needed when the list changes.
   setup        String?
   mistakeTags  String[] @default([])
+  // How the trader felt on this trade — fixed vocab in
+  // src/config/trade-emotions.ts, plain string array (same non-enum rationale
+  // as mistakeTags).
+  emotions     String[] @default([])
   followedPlan Boolean?
   // Snapshot of the exact Setup.conditions text strings checked at save
   // time — not a live link to condition IDs, so it survives the setup's
   // conditions being edited/reordered/deleted later without corrupting
   // trade history ("saved as taken", not re-derived).
   checkedConditions String[] @default([])
-  // Optional fee/commission for this trade, in dollars — tracked separately
-  // from `pnl` (which stays exactly as manually entered) so it can feed a
-  // "net after fees" figure without changing the meaning of existing trades.
+  // Deprecated — the app no longer collects a commission/fee. Column kept
+  // (nullable) so existing rows aren't dropped; safe to remove in a future
+  // deliberate migration.
   commission Float?
   // Optional dollar amount the trader considers "at risk" on this trade,
   // manually entered like `pnl` — a price-distance-based calculation isn't
   // reliable across instruments without a per-instrument point-value, which
   // isn't modeled here (see computeAchievedR's comment in trade-stats.ts).
   riskAmount Float?
+  // Contract-type key into src/config/instrument-specs.ts ("emini" | "micro" |
+  // "standard"). Resolves the dollar point value for P&L / risk math. Null on
+  // trades logged before per-instrument sizing existed.
+  contractSize String?
+  // Deprecated — point value now comes only from instrument-specs.ts (no
+  // per-trade override). Column kept (nullable) so existing rows aren't dropped.
+  pointValue Float?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   images     TradeImage[]

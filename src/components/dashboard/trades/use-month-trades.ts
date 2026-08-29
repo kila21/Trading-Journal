@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { TradeDTO } from "@/types/trade";
+import { normalizeTrades } from "./normalize-trade";
 
 export function useMonthTrades(year: number, month: number) {
   const [trades, setTrades] = useState<TradeDTO[]>([]);
@@ -18,7 +19,7 @@ export function useMonthTrades(year: number, month: number) {
       .then((response) => response.json().then((body) => ({ ok: response.ok, body })))
       .then(({ ok, body }) => {
         if (cancelled) return;
-        setTrades(ok ? (body.trades as TradeDTO[]) : []);
+        setTrades(ok ? normalizeTrades(body.trades) : []);
         setError(!ok);
         setLoadedKey(key);
       })

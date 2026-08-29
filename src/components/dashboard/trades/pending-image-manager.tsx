@@ -10,6 +10,7 @@ import { PencilIcon } from "@/components/dashboard/icons";
 import { tradeTimeframes } from "@/config/trade-timeframes";
 import { cn } from "@/lib/utils";
 import { useImageDropZone } from "./use-image-drop-zone";
+import { FileImagePreview } from "./file-image-preview";
 import type { PendingImageEntry } from "@/types/trade";
 import type { TradeTimeframe } from "@/config/trade-timeframes";
 
@@ -233,7 +234,15 @@ function AddPendingTimeframe({ onAdd }: { onAdd: (entry: PendingImageEntry) => v
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                 className="block w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground"
               />
-              {file && <p className="truncate text-xs text-muted">{file.name}</p>}
+              {file && (
+                <div className="space-y-1">
+                  <FileImagePreview
+                    file={file}
+                    className="max-h-40 w-full rounded-lg border border-border object-contain"
+                  />
+                  <p className="truncate text-xs text-muted">{file.name}</p>
+                </div>
+              )}
             </div>
           </div>
           <div className="space-y-1.5">
